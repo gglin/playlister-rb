@@ -1,3 +1,8 @@
+require_relative 'lib/artist.rb'
+require_relative 'lib/song.rb'
+require_relative 'lib/genre.rb'
+
+
 def test(title, &b)
   begin
     if b
@@ -99,8 +104,12 @@ test 'artists have genres' do
   song = Song.new
 
   song.genre = Genre.new.tap{|g| g.name = "rap"}
+    # puts song.inspect
+    # puts song.genre.inspect
   artist.add_song(song)
+    # puts artist.songs.inspect
 
+  # puts artist.genres.inspect
   assert artist.genres.include?(song.genre)
 end
 
@@ -123,23 +132,28 @@ test 'A genre has many songs' do
     song.genre = genre
   end
 
+  #puts genre.songs.inspect
   assert_equal genre.songs.count, 2
 end
 
 test 'A genre has many artists' do
   genre = Genre.new.tap{|g| g.name = 'rap'}
-
   [1,2].each do
     artist = Artist.new
     song = Song.new
+
     song.genre = genre
     artist.add_song(song)
+
+    # puts artist.inspect
+    # puts song.inspect
   end
 
+  # puts genre.artists.inspect
   assert_equal genre.artists.count, 2
 end
 
-test 'A genres Artists are unique' do
+test 'A genre\'s Artists are unique' do
   genre = Genre.new.tap{|g| g.name = 'rap'}
   artist = Artist.new
 
