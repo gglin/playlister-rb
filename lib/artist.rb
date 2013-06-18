@@ -4,23 +4,23 @@
 class Artist
 
   attr_accessor :name, :songs
-  @@all = []
+  All = []
 
   def initialize
-    @@all << self
+    All << self
     @songs = []
   end
 
   def self.reset_artists
-    @@all = []
+    All.clear
   end
 
   def self.count
-    @@all.size
+    All.size
   end
 
   def self.all
-    @@all
+    All
   end
 
   def songs_count
@@ -28,11 +28,14 @@ class Artist
   end
 
   def add_song(song)
+    
+    # Add song into the artist's catalog
     @songs << song
 
-    # puts "Songs: #{songs.inspect}"
-    # puts "Genre: #{genres.inspect}"
+    # Assign this artist to that song
+    song.artist = self
 
+    # for each of this artist's genres, insert this artist into that genre
     genres.each do |genre|
       if !genre.nil?
         if !genre.artists.include? self 
@@ -40,6 +43,7 @@ class Artist
         end
       end
     end 
+
   end
 
   def genres # returns an array of genres

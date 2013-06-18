@@ -2,20 +2,20 @@ class Genre
 
   attr_accessor :name
   attr_reader :songs, :artists
-  @@all = []
+  All = []
 
   def initialize
-    @@all << self
+    All << self
     @songs = []
     @artists = []
   end
 
   def self.reset_genres
-    @@all = []
+    All.clear
   end
 
   def self.all
-    @@all
+    All
   end
 
 end
