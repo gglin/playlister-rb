@@ -1,26 +1,24 @@
-# require_relative 'genre.rb'
+# require_relative 'genre'
+require_relative 'memorable'
 
 class Song
 
-  attr_accessor :name, :artist
-  attr_reader :genre
+  extend Memorable
+  attr_accessor :name, :artist, :genre
   All = []
+
+  def self.all
+    All
+  end
+
+  def self.reset_songs
+    reset_all
+  end
+  reset_songs
 
   def initialize(name = nil)
     All << self
     @name = name
-  end
-
-  def self.reset_songs
-    All.clear
-  end
-
-  def self.count
-    All.size
-  end
-
-  def self.all
-    All
   end
 
   def genre=(genre)

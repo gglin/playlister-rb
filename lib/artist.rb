@@ -1,27 +1,26 @@
-# require_relative 'song.rb'
-# require_relative 'genre.rb'
+# require_relative 'song'
+# require_relative 'genre'
+require_relative 'memorable'
 
 class Artist
 
+  extend Memorable
   attr_accessor :name, :songs
   All = []
+
+  def self.all
+    All
+  end
+
+  def self.reset_artists
+    reset_all
+  end
+  reset_artists
 
   def initialize(name = nil)
     All << self
     @songs = []
     @name = name
-  end
-
-  def self.reset_artists
-    All.clear
-  end
-
-  def self.count
-    All.size
-  end
-
-  def self.all
-    All
   end
 
   def songs_count
@@ -49,9 +48,7 @@ class Artist
   end
 
   def genres # returns an array of genres
-    return_genres = @songs.collect do |song|
-                      song.genre
-                    end
+    @songs.collect { |song| song.genre }
   end
 
   def inspect

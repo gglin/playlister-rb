@@ -1,8 +1,20 @@
+require_relative 'memorable'
+
 class Genre
 
+  extend Memorable
   attr_accessor :name
   attr_reader :songs, :artists
   All = []
+
+  def self.all
+    All
+  end
+
+  def self.reset_genres
+    reset_all
+  end
+  reset_genres
 
   def initialize(name = nil)
     All << self
@@ -11,16 +23,12 @@ class Genre
     @name = name
   end
 
-  def self.reset_genres
-    All.clear
+  def songs_count
+    @songs.size
   end
 
-  def self.count
-    All.size
-  end
-
-  def self.all
-    All
+  def artists_count
+    @artists.size
   end
 
   def inspect
