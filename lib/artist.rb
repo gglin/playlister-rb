@@ -6,9 +6,10 @@ class Artist
   attr_accessor :name, :songs
   All = []
 
-  def initialize
+  def initialize(name = nil)
     All << self
     @songs = []
+    @name = name
   end
 
   def self.reset_artists
@@ -30,12 +31,13 @@ class Artist
   def add_song(song)
     
     # Add song into the artist's catalog
+    @songs ||= []
     @songs << song
 
     # Assign this artist to that song
     song.artist = self
 
-    # for each of this artist's genres, insert this artist into that genre
+    # For each of this artist's genres, insert this artist into that genre
     genres.each do |genre|
       if !genre.nil?
         if !genre.artists.include? self 
@@ -50,6 +52,14 @@ class Artist
     return_genres = @songs.collect do |song|
                       song.genre
                     end
+  end
+
+  def inspect
+    "\"#{@name}\""
+  end
+
+  def to_s
+    "#{@name} - #{@songs}"
   end
 
 end

@@ -1,6 +1,7 @@
 require_relative 'lib/artist.rb'
 require_relative 'lib/song.rb'
 require_relative 'lib/genre.rb'
+require 'debugger'
 
 
 def test(title, &b)
@@ -59,6 +60,7 @@ test "An artist has songs" do
   artist.songs = []
   assert_equal artist.songs, []
 end
+
 
 test 'The Artist class can reset the artists that have been created' do
   assert Artist.reset_artists
@@ -209,6 +211,15 @@ test 'A song has an artist' do
   artist.add_song(song)
 
   assert_equal song.artist, artist
+end
+
+test 'The Song class can keep track of all created songs' do
+  Song.reset_songs # You must implement a method like this
+  songs = [1..5].collect do |i|
+    Song.new
+  end
+
+  assert_equal Song.all, songs
 end
 
 # Part 2: Site Generation Using ERB
