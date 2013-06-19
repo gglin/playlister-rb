@@ -6,7 +6,7 @@ require_relative 'lib/genre.rb'
 
 class Jukebox
 
-  VALID_COMMANDS = %w{artist genre list play stop help exit}
+  VALID_COMMANDS = %w{artist genre play stop help exit}
  
   attr_accessor :songs, :artists, :genres
   attr_reader   :power, :now_playing, :command
@@ -32,17 +32,15 @@ class Jukebox
     @songs.each {|song| @artists << song.artist if !@artists.include? song.artist}
     @artists.sort! {|artist1, artist2| artist1.name <=> artist2.name}
 
-    # get list of artist, song, and genre names
-    @song_list   = @songs.collect{|song| song.name}
-    @artist_list = @artists.collect{|artist| artist.name}
-    @genre_list  = @genres.collect{|genre| genre.name}
-
     # by default the power is off
     @power = false
 
-    puts @songs.size
-    puts @genres.size
-    puts @artists.size
+    puts "\nNew jukebox created with #{@songs.size} songs, #{@artists.size} artists, and #{@genres.size} genres"
+  end
+
+
+  def name_list(object_array) # returns an array of names (string), given an array of objects
+    object_array.collect{|object| object.name.downcase}
   end
 
 
@@ -66,7 +64,7 @@ class Jukebox
     case @command
     when "artist"
       browse_artists
-      prompt_artist
+      prompt_artist(@artists)
     when "genre" then browse_genres
     when "stop" then stop
     when "help" then help
@@ -88,28 +86,65 @@ class Jukebox
   end
 
 
-
-
-
-  def prompt_artist
-    @command = gets.chomp.strip
-    valid_command_entered = VALID_COMMANDS.include?(@command.downcase)
+  def prompt_category(categories)
+    @command = gets.chomp.strip.downcase
+    valid_command_entered = VALID_COMMANDS.include?(@command)
  
-    until @artist_list.include?(@command) || valid_command_entered
-      puts "\n>> Error: please enter a valid artist (punctuation and case matter!)"
-      @command = gets.chomp.strip
-      valid_command_entered = VALID_COMMANDS.include?(@command.downcase)
+    until name_list(categories).include?(@command) || valid_command_entered
+      puts "\n>> Error: please enter a valid category"
+      @command = gets.chomp.strip.downcase
+      valid_command_entered = VALID_COMMANDS.include?(@command)
     end
 
     if valid_command_entered
-      @command = @command.downcase
       process_input
     else
-      artist = @artists.select{|artist| artist.name == @command}.first
+      yield
+    end
+  end
+
+
+  def prompt_artist(artists)
+    @command = gets.chomp.strip.downcase
+    valid_command_entered = VALID_COMMANDS.include?(@command)
+ 
+    until name_list(artists).include?(@command) || valid_command_entered
+      puts "\n>> Error: please enter a valid artist"
+      @command = gets.chomp.strip.downcase
+      valid_command_entered = VALID_COMMANDS.include?(@command)
+    end
+
+    if valid_command_entered
+      process_input
+    else
+      artist = artists.select{|artist| artist.name.downcase == @command}.first
       puts "\n#{print_artist(artist)}:"
       artist.songs.each_with_index do |song, index|
         puts "\t#{index+1}. #{print_song(song)}"
       end
+      puts "\n>> Select a song to play:"
+      prompt_song(artist.songs)
+    end
+  end
+
+
+  def prompt_song(songs)
+    song_list = songs.collect
+
+    @command = gets.chomp.strip.downcase
+    valid_command_entered = VALID_COMMANDS.include?(@command)
+ 
+    until name_list(songs).include?(@command) || valid_command_entered
+      puts "\n>> Error: please enter a valid song"
+      @command = gets.chomp.strip.downcase
+      valid_command_entered = VALID_COMMANDS.include?(@command)
+    end
+
+    if valid_command_entered
+      process_input
+    else
+      song = songs.select{|song| song.name.downcase == @command}.first
+      play_song(song)
     end
   end
 
@@ -121,16 +156,6 @@ class Jukebox
     end
 
     puts "\n>> Select a genre:"
-  end
- 
-
-  def list
-    show_song_playing
-
-    @songs.each_with_index do |song, index|
-      puts "Song #{index+1}: #{song}"
-    end
-    puts "\n>> Would you like to play a song in this list? if so, type 'play'"
   end
  
 
@@ -166,7 +191,7 @@ class Jukebox
 
   def stop
     if @now_playing
-      puts "\nStopped playing '#{print_song(@now_playing)}'."
+      puts "\nStopped playing '#{@now_playing.artist.name} - #{print_song(@now_playing)}'"
       @now_playing = nil
     else
       puts "\nThere is no song playing!"
@@ -191,18 +216,17 @@ class Jukebox
   end
 
 
-
-  def prompt_new_song
-    puts "\n>> Type 'Artist' or 'Genre' to browse and pick a new song. Type 'Exit' to take a break."
-  end
-
-
   def show_song_playing
     if @now_playing
-      puts "\nNow playing: #{print_song(@now_playing)}."
+      puts "\nNow playing: #{@now_playing.artist.name} - #{print_song(@now_playing)}"
     else
       puts "\nNo song currently playing."
     end
+  end
+
+
+  def prompt_new_song
+    puts "\n>> Type 'Artist' or 'Genre' to browse and pick a new song. Type 'Exit' to take a break."
   end
 
 
