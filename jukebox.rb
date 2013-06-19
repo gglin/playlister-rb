@@ -6,7 +6,7 @@ require_relative 'lib/genre.rb'
 
 class Jukebox
 
-  VALID_COMMANDS = %w{artist genre play stop help exit}
+  VALID_COMMANDS = %w{artist genre stop help exit}
  
   attr_accessor :songs, :artists, :genres
   attr_reader   :power, :now_playing, :command
@@ -65,24 +65,36 @@ class Jukebox
     when "artist"
       browse_artists
       prompt_artist(@artists)
-    when "genre" then browse_genres
+    when "genre"
+      browse_genres
+      prompt_genre(@genres)
     when "stop" then stop
     when "help" then help
     when "exit" then exit
     else
       puts "\n>> Command not recognized. Available commands are 'Artist', 'Genre', 'Stop', Help', and 'Exit'"
-      puts ">>   You can also type in the name of a specific artist or genre to view available songs"
+      # puts ">>   You can also type in the name of a specific artist or genre to view available songs"
     end
   end
 
 
   def browse_artists
-    puts "\nThere are #{@artists.size} artists:\n"
+    puts "\n  There are #{@artists.size} artists:\n"
     @artists.each_with_index do |artist, index|
       puts "\t#{index+1}. #{print_artist(artist)}"
     end
 
-    puts "\n>> Select an artist:"
+    puts "\n>> Select an artist (enter either the artist name or number):"
+  end
+
+
+  def browse_genres
+    puts "\n  There are #{@genres.size} genres:\n"
+    @genres.each_with_index do |genre, index|
+      puts "\t#{index+1}. #{print_genre(genre)}"
+    end
+
+    puts "\n>> Select a genre (enter either the genre name or number):"
   end
 
 
@@ -90,8 +102,8 @@ class Jukebox
     @command = gets.chomp.strip.downcase
     valid_command_entered = VALID_COMMANDS.include?(@command)
  
-    until name_list(categories).include?(@command) || valid_command_entered
-      puts "\n>> Error: please enter a valid category"
+    until name_list(categories).include?(@command) || @command.to_i.between?(1,categories.size) || valid_command_entered
+      puts "\n>> Error: please enter a valid category or number"
       @command = gets.chomp.strip.downcase
       valid_command_entered = VALID_COMMANDS.include?(@command)
     end
@@ -99,85 +111,43 @@ class Jukebox
     if valid_command_entered
       process_input
     else
-      yield
+      if @command.to_i.between?(1,categories.size)
+        category = categories[@command.to_i - 1]
+      else
+        category = categories.detect{|category| category.name.downcase == @command}
+      end
+      yield category
     end
   end
 
 
   def prompt_artist(artists)
-    @command = gets.chomp.strip.downcase
-    valid_command_entered = VALID_COMMANDS.include?(@command)
- 
-    until name_list(artists).include?(@command) || valid_command_entered
-      puts "\n>> Error: please enter a valid artist"
-      @command = gets.chomp.strip.downcase
-      valid_command_entered = VALID_COMMANDS.include?(@command)
-    end
-
-    if valid_command_entered
-      process_input
-    else
-      artist = artists.select{|artist| artist.name.downcase == @command}.first
-      puts "\n#{print_artist(artist)}:"
+    prompt_category(artists) do |artist|
+      puts "\n #{print_artist(artist)}:"
       artist.songs.each_with_index do |song, index|
         puts "\t#{index+1}. #{print_song(song)}"
       end
-      puts "\n>> Select a song to play:"
+      puts "\n>> Select a song to play (enter either the song name or number):"
       prompt_song(artist.songs)
     end
   end
 
 
   def prompt_song(songs)
-    song_list = songs.collect
-
-    @command = gets.chomp.strip.downcase
-    valid_command_entered = VALID_COMMANDS.include?(@command)
- 
-    until name_list(songs).include?(@command) || valid_command_entered
-      puts "\n>> Error: please enter a valid song"
-      @command = gets.chomp.strip.downcase
-      valid_command_entered = VALID_COMMANDS.include?(@command)
-    end
-
-    if valid_command_entered
-      process_input
-    else
-      song = songs.select{|song| song.name.downcase == @command}.first
+    prompt_category(songs) do |song|
       play_song(song)
     end
   end
 
 
-  def browse_genres
-    puts "\nThere are #{@genres.size} genres:\n"
-    @genres.each_with_index do |genre, index|
-      puts "\t#{index+1}. #{print_genre(genre)}"
-    end
-
-    puts "\n>> Select a genre:"
-  end
- 
-
-  def play
-    index = @command.split.last.to_i
-
-    puts "\n>> Enter song number:"
-    @command = gets.chomp.downcase.strip
-    valid_command_entered = VALID_COMMANDS.include?(@command)
- 
-    until (@command.to_i >= 1 && @command.to_i <= @songs.size) || valid_command_entered
-      puts ">> Error: please enter an integer from 1 - #{@songs.size}."
-      @command = gets.chomp.downcase.strip
-      valid_command_entered = VALID_COMMANDS.include?(@command)
-    end
-
-    if valid_command_entered
-      process_input
-    else
-      @now_playing = @songs[@command.to_i - 1]
-      show_song_playing
-      prompt_new_song
+  def prompt_genre(genres)
+    prompt_category(genres) do |genre|
+      puts "\n #{print_genre(genre)}:"
+      genre.songs.each_with_index do |song, index|
+        puts "\t#{index+1}. #{song.artist.name} - #{print_song(song)}"
+      end
+      puts "\n>> Select a song to play (enter either the song name or number):"
+      prompt_song(genre.songs)
     end
   end
 
@@ -191,10 +161,10 @@ class Jukebox
 
   def stop
     if @now_playing
-      puts "\nStopped playing '#{@now_playing.artist.name} - #{print_song(@now_playing)}'"
+      puts "\n  Stopped playing '#{@now_playing.artist.name} - #{print_song(@now_playing)}'"
       @now_playing = nil
     else
-      puts "\nThere is no song playing!"
+      puts "\n  There is no song playing!"
     end
     prompt_new_song
   end
@@ -211,16 +181,16 @@ class Jukebox
 
 
   def exit
-    puts "\nThanks for playing our CLI Jukebox! Have a great day."
+    puts "\n  Thanks for playing our CLI Jukebox! Have a great day."
     @power = false
   end
 
 
   def show_song_playing
     if @now_playing
-      puts "\nNow playing: #{@now_playing.artist.name} - #{print_song(@now_playing)}"
+      puts "\n  Now playing: #{@now_playing.artist.name} - #{print_song(@now_playing)}"
     else
-      puts "\nNo song currently playing."
+      puts "\n  No song currently playing."
     end
   end
 
