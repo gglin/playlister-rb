@@ -59,6 +59,10 @@ class Artist
     "#{@name} - #{@songs}"
   end
 
+  def url
+    "#{@name.downcase.strip}.html"
+  end
+
 end
 
   

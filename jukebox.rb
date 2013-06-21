@@ -39,8 +39,16 @@ class Jukebox
   end
 
 
-  def name_list(object_array) # returns an array of names (string), given an array of objects
+  def objects_to_names(object_array) # returns an array of downcased names (string), given an array of objects
     object_array.collect{|object| object.name.downcase}
+  end
+
+
+  def names_to_objects(name_array, categories) # returns (filters) an array of objects from the categories list, given an array of downcased names (strings)
+    name_array.collect do |name|
+      categories.detect{|object| object.name.downcase == name} 
+      # doesn't work properly if there are two of the same name, as this will always return the first result
+    end
   end
 
 
@@ -63,11 +71,11 @@ class Jukebox
   def process_input
     case @command
     when "artist"
-      browse_artists
-      prompt_artist(@artists)
+      browse_artists(@artists)
+      prompt_artists(@artists)
     when "genre"
-      browse_genres
-      prompt_genre(@genres)
+      browse_genres(@genres)
+      prompt_genres(@genres)
     when "stop" then stop
     when "help" then help
     when "exit" then exit
@@ -78,76 +86,115 @@ class Jukebox
   end
 
 
-  def browse_artists
-    puts "\n  There are #{@artists.size} artists:\n"
-    @artists.each_with_index do |artist, index|
-      puts "\t#{index+1}. #{print_artist(artist)}"
+  def browse_artists(artists)
+    puts "\n  There are #{artists.size} artists:\n"
+    artists.each_with_index do |artist, index|
+      puts "\t#{index+1}.    "[0,5] + " #{print_artist(artist, longest_name_length(artists))}"
     end
 
     puts "\n>> Select an artist (enter either the artist name or number):"
   end
 
 
-  def browse_genres
-    puts "\n  There are #{@genres.size} genres:\n"
-    @genres.each_with_index do |genre, index|
-      puts "\t#{index+1}. #{print_genre(genre)}"
+  def browse_genres(genres)
+    puts "\n  There are #{genres.size} genres:\n"
+    genres.each_with_index do |genre, index|
+      puts "\t#{index+1}.    "[0,5] + " #{print_genre(genre, longest_name_length(genres))}"
     end
 
     puts "\n>> Select a genre (enter either the genre name or number):"
   end
 
 
-  def prompt_category(categories)
+  def browse_categories(categories)
+    case categories[0].class.to_s
+    when "Artist"
+      browse_artists(categories)
+    when "Genre"
+      browse_genres(categories)
+    end
+  end
+
+
+  def prompt(categories)
+    # initial user prompt
     @command = gets.chomp.strip.downcase
     valid_command_entered = VALID_COMMANDS.include?(@command)
- 
-    until name_list(categories).include?(@command) || @command.to_i.between?(1,categories.size) || valid_command_entered
-      puts "\n>> Error: please enter a valid category or number"
+    filtered_category_names = objects_to_names(categories).grep(/^#{@command}/)
+    
+    # loop until an understood command is entered 
+    until !filtered_category_names.empty? || @command.to_i.between?(1,categories.size) || valid_command_entered
+      puts "\n>> Error: please enter a valid #{categories[0].class.to_s.downcase} name or number"
       @command = gets.chomp.strip.downcase
       valid_command_entered = VALID_COMMANDS.include?(@command)
+      filtered_category_names = objects_to_names(categories).grep(/^#{@command}/)
     end
 
+    # process the understood command
     if valid_command_entered
+      p "valid command entered"
       process_input
-    else
-      if @command.to_i.between?(1,categories.size)
-        category = categories[@command.to_i - 1]
-      else
-        category = categories.detect{|category| category.name.downcase == @command}
-      end
+    elsif @command.to_i.between?(1,categories.size)
+      p "index entered"
+      category = categories[@command.to_i - 1]
       yield category
+    elsif filtered_category_names.size == 1
+      p "match found"
+      @command = filtered_category_names[0]
+      category = categories.detect{|category| category.name.downcase == @command}
+      yield category
+    else 
+      p "filter"
+      new_categories = names_to_objects(filtered_category_names, categories)
+      p new_categories
+      browse_categories(new_categories)
+      prompt_categories(new_categories)
     end
   end
 
 
-  def prompt_artist(artists)
-    prompt_category(artists) do |artist|
+  def prompt_categories(categories)
+    case categories[0].class.to_s
+    when "Artist"
+      prompt_artists(categories)
+    when "Genre"
+      prompt_genres(categories)
+    when "Song"
+      prompt_songs(categories)
+    end    
+  end
+
+
+  def prompt_artists(artists)
+    prompt(artists) do |artist|
       puts "\n #{print_artist(artist)}:"
       artist.songs.each_with_index do |song, index|
-        puts "\t#{index+1}. #{print_song(song)}"
+        puts "\t#{index+1}.    "[0,5] + " #{print_song(song)}"
       end
       puts "\n>> Select a song to play (enter either the song name or number):"
-      prompt_song(artist.songs)
+      prompt_songs(artist.songs)
     end
   end
 
 
-  def prompt_song(songs)
-    prompt_category(songs) do |song|
-      play_song(song)
+  def prompt_songs(songs)
+    if songs.size == 1
+      play_song(songs[0])
+    else
+      prompt(songs) do |song|
+      end
     end
   end
 
 
-  def prompt_genre(genres)
-    prompt_category(genres) do |genre|
+  def prompt_genres(genres)
+    prompt(genres) do |genre|
       puts "\n #{print_genre(genre)}:"
       genre.songs.each_with_index do |song, index|
-        puts "\t#{index+1}. #{song.artist.name} - #{print_song(song)}"
+        puts "\t#{index+1}. #{spacer(song.artist, longest_name_length(genre.songs))} - #{song.name}"
       end
       puts "\n>> Select a song to play (enter either the song name or number):"
-      prompt_song(genre.songs)
+      prompt_songs(genre.songs)
     end
   end
 
@@ -175,6 +222,7 @@ class Jukebox
     puts "\n>> HELP SCREEN"
     puts ">> Type 'Artist' to display the list of artists (and then pick a song for that artist)" 
     puts ">> Type 'Genre' to display the list of genres (and then pick a song for that genre)"
+    puts "   Within artists and genres, you can type part of a name to filter results"
     puts ">> Type 'Stop' to stop playing the current song" if @now_playing
     puts ">> Type 'Exit' to leave the program."
   end
@@ -200,21 +248,36 @@ class Jukebox
   end
 
 
-  def print_artist(artist)
+  def spacer(category, width=nil)
+    width = category.name.length + 1 if width.nil?
+    "#{category.name}                                "[0,width]
+  end
+
+
+  def print_artist(artist, width=nil)
     song_word = artist.songs_count == 1 ? "Song" : "Songs"
-    "#{artist.name} - #{artist.songs_count} #{song_word}"
+    "#{spacer(artist,width)} - #{artist.songs_count} #{song_word}"
   end
 
 
-  def print_song(song)
-    "#{song.name} [#{song.genre.name}]"
+  def print_song(song, width=nil)
+    "#{spacer(song,width)} [#{song.genre.name}]"
   end
 
 
-  def print_genre(genre)
+  def print_genre(genre, width=nil)
     song_word   = genre.songs_count   == 1 ? "Song" : "Songs"
     artist_word = genre.artists_count == 1 ? "Artist" : "Artists"
-    "#{genre.name}: #{genre.songs_count} #{song_word}, #{genre.artists_count} #{artist_word}"
+    "#{genre.name}:    #{genre.songs_count} #{song_word}, #{genre.artists_count} #{artist_word}"
+  end
+
+
+  def longest_name_length(categories)
+    max = 0
+    categories.each do |category|
+      max = category.name.length if category.name.length > max
+    end
+    max
   end
 
 
@@ -303,6 +366,14 @@ cli = Jukebox.new(songs)
 # puts cli.genres
 # puts
 # puts cli.artists
+# 
+# genres = cli.genres
+# artists = cli.artists
 
+# names_list = cli.objects_to_names(artists)
+# p names_list
+# puts "-------"
+# objects_list = cli.names_to_objects(names_list[0..10], artists)
+# p objects_list
 cli.start
 
