@@ -12,30 +12,42 @@ class Jukebox
   attr_reader   :power, :now_playing, :command
  
   def initialize(songs)
-    # sort songs
+    #from songs, get and sort artists and genres
     @songs = songs
-    @songs.sort! {|song1, song2| song1.name <=> song2.name}
+    sort_by_name!(@songs)
     
-    # from the inputted songs, create a genres array
-    @genres = []
-    @songs.each {|song| @genres << song.genre if !@genres.include? song.genre}
-    @genres.sort! do |genre1, genre2| 
-      if genre1.songs_count != genre2.songs_count
-        genre2.songs_count <=> genre1.songs_count
-      else
-        genre1.name <=> genre2.name
-      end
-    end
+    @genres = set_categories(@songs, :genre)
+    sort_by_song_count!(@genres)
 
-    # from the inputted songs, create an artists array
-    @artists = []
-    @songs.each {|song| @artists << song.artist if !@artists.include? song.artist}
-    @artists.sort! {|artist1, artist2| artist1.name <=> artist2.name}
+    @artists = set_categories(@songs, :artist)
+    sort_by_name!(@artists)
 
-    # by default the power is off
     @power = false
 
     puts "\nNew jukebox created with #{@songs.size} songs, #{@artists.size} artists, and #{@genres.size} genres"
+  end
+
+
+  def set_categories(songs, category)
+    categories = []
+    songs.each {|song| categories << song.send(category) if !categories.include? song.send(category)}
+    categories
+  end
+
+
+  def sort_by_song_count!(categories)
+    categories.sort! do |cat1, cat2| 
+      if cat1.songs_count != cat2.songs_count
+        cat2.songs_count <=> cat1.songs_count
+      else
+        cat1.name <=> cat2.name
+      end
+    end
+  end
+
+
+  def sort_by_name!(categories)
+    categories.sort! {|cat1, cat2| cat1.name <=> cat2.name}
   end
 
 
@@ -131,19 +143,19 @@ class Jukebox
     end
 
     # process the understood command
-    if valid_command_entered
+    if valid_command_entered                          # home valid command entered
       p "valid command entered"
       process_input
-    elsif @command.to_i.between?(1,categories.size)
+    elsif @command.to_i.between?(1,categories.size)   # number entered
       p "index entered"
       category = categories[@command.to_i - 1]
       yield category
-    elsif filtered_category_names.size == 1
+    elsif filtered_category_names.size == 1           # string match found 
       p "match found"
       @command = filtered_category_names[0]
       category = categories.detect{|category| category.name.downcase == @command}
       yield category
-    else 
+    else                                              # filtered
       p "filter"
       new_categories = names_to_objects(filtered_category_names, categories)
       p new_categories
@@ -191,7 +203,7 @@ class Jukebox
     prompt(genres) do |genre|
       puts "\n #{print_genre(genre)}:"
       genre.songs.each_with_index do |song, index|
-        puts "\t#{index+1}. #{spacer(song.artist, longest_name_length(genre.songs))} - #{song.name}"
+        puts "\t#{index+1}.    "[0,5] + " #{spacer(song.artist.name, longest_name_length(genre.artists))} - #{song.name}"
       end
       puts "\n>> Select a song to play (enter either the song name or number):"
       prompt_songs(genre.songs)
@@ -248,27 +260,27 @@ class Jukebox
   end
 
 
-  def spacer(category, width=nil)
-    width = category.name.length + 1 if width.nil?
-    "#{category.name}                                "[0,width]
+  def spacer(name, width=nil)
+    width = name.length + 1 if width.nil?
+    "#{name}                                "[0,width]
   end
 
 
   def print_artist(artist, width=nil)
     song_word = artist.songs_count == 1 ? "Song" : "Songs"
-    "#{spacer(artist,width)} - #{artist.songs_count} #{song_word}"
+    "#{spacer(artist.name,width)} - #{artist.songs_count} #{song_word}"
   end
 
 
   def print_song(song, width=nil)
-    "#{spacer(song,width)} [#{song.genre.name}]"
+    "#{spacer(song.name,width)} [#{song.genre.name}]"
   end
 
 
   def print_genre(genre, width=nil)
     song_word   = genre.songs_count   == 1 ? "Song" : "Songs"
     artist_word = genre.artists_count == 1 ? "Artist" : "Artists"
-    "#{genre.name}:    #{genre.songs_count} #{song_word}, #{genre.artists_count} #{artist_word}"
+    "#{spacer(genre.name+':',width)} #{genre.artists_count} #{artist_word}, #{genre.songs_count} #{song_word}"
   end
 
 
@@ -277,7 +289,7 @@ class Jukebox
     categories.each do |category|
       max = category.name.length if category.name.length > max
     end
-    max
+    max + 1
   end
 
 
