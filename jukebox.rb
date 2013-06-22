@@ -6,12 +6,14 @@ require_relative 'lib/genre.rb'
 
 # refactor: move some of code to another module
 # add: sort while browsing
-# browse by songs
+# known bug: when arrow keys entered while rexep matching, `get_user_input': premature end of char-class:
 
-# reopen Array class to get better regexp matching
-# Enumerable.grep(pattern) only matches when element === pattern, not when element =~ pattern
+
+# reopen Array class
 class Array
 
+  # Enumerable.grep(pattern) only matches when element === pattern
+  # Enhance functionality so that it also matches when element =~ pattern
   def grep2(pattern)
     self.select do |element|
       if pattern.class.to_s == element.class.to_s
@@ -24,7 +26,7 @@ class Array
 
   # returns an array of downcased names (string), given an array of objects
   def objects_to_names 
-    self.collect{|object| object.name.downcase}
+    self.collect{ |object| object.name.downcase }
   end
 
   # returns (filters) an array of objects from the categories list, given an array of downcased names (strings)
@@ -35,12 +37,17 @@ class Array
     end
   end
 
+  # returns an array of new objects, based on each element of the original array having that object as a property
+  def objects_to_objects(category)
+    self.collect{ |object| object.send(category) }
+  end
+
 end
 
 
 class Jukebox
 
-  VALID_COMMANDS = [/^artists?$/, /^genres?$/, "stop", "help", "exit"]
+  VALID_COMMANDS = [/^artists?$/, /^genres?$/, /^songs?$/, "stop", "help", "exit"]
  
   attr_reader   :songs, :artists, :genres
   attr_reader   :power, :now_playing, :command
@@ -118,11 +125,14 @@ class Jukebox
     when /^genres?$/
       browse_categories(@genres)
       prompt_genres(@genres)
+    when /^songs?$/
+      browse_categories(@songs)
+      prompt_songs(@songs)
     when "stop" then stop
     when "help" then help
     when "exit" then exit
     else
-      puts "\n>> Command not recognized. Available commands are 'Artist', 'Genre', 'Stop', Help', and 'Exit'"
+      puts "\n>> Command not recognized. Available commands are 'Artist', 'Song', 'Genre', 'Stop', Help', and 'Exit'"
       # puts ">>   You can also type in the name of a specific artist or genre to view available songs"
     end
   end
@@ -132,9 +142,12 @@ class Jukebox
     starting_filter = string_match.nil? ? "" : "starting with '#{string_match}'"
 
     category_name = categories[0].class.to_s.downcase
+    include_artist   = category_name == "song" ? true : false
+    artist_max_width = category_name == "song" ? longest_name_length( categories.objects_to_objects(:artist) ) : nil
+
     puts "\n  There are #{categories.size} #{category_name}s " + starting_filter + ":\n"
     categories.each_with_index do |category, index|
-      puts "\t#{index+1}.    "[0,5] + " #{print_category(category, longest_name_length(categories))}"
+      puts "\t#{index+1}.    "[0,5] + " #{print_category(category, longest_name_length(categories), include_artist, artist_max_width)}"
     end
 
     puts "\n>> Select a #{category_name} (enter either the #{category_name} name or number):"
@@ -241,9 +254,10 @@ class Jukebox
   def help
     show_song_playing
     puts "\n>> HELP SCREEN"
-    puts ">> Type 'Artist' to display the list of artists (and then pick a song for that artist)" 
-    puts ">> Type 'Genre' to display the list of genres (and then pick a song for that genre)"
-    puts "   - Within artists and genres, you can type part of a name to filter results"
+    puts ">> Type 'Artist' to display the list of artists (& then pick a song for that artist)" 
+    puts ">> Type 'Genre' to display the list of genres (& then pick a song of that genre)"
+    puts ">> Type 'Song' to display the list of songs (& then pick a song)"
+    puts "   - Within artists, songs, and genres, you can type part of the name to filter results"
     puts ">> Type 'Stop' to stop playing the current song" if @now_playing
     puts ">> Type 'Exit' to leave the program."
   end
@@ -268,34 +282,35 @@ class Jukebox
 
 
   def prompt_new_song
-    puts "\n>> Type 'Artist' or 'Genre' to browse and pick a new song. Type 'Exit' to take a break."
+    puts "\n>> Type 'Artist', 'Song', or 'Genre' to browse by category. Type 'Exit' to take a break."
   end
 
 
   def spacer(name, width = nil)
     width = name.length + 1 if width.nil?
-    "#{name}                                "[0,width]
+    "#{name}                                                                                   "[0,width]
   end
 
 
-  def print_category(category, width = nil)
+  def print_category(category, width = nil, include_artist = false, artist_width = nil)
     category_name = category.class.to_s.downcase
-    self.send("print_#{category_name}".to_sym, category, width)   
+    self.send("print_#{category_name}".to_sym, category, width, include_artist, artist_width)
   end
 
 
-  def print_artist(artist, width = nil)
+  def print_artist(artist, width = nil, *args)
     song_word = artist.songs_count == 1 ? "Song" : "Songs"
     "#{spacer(artist.name,width)} - #{artist.songs_count} #{song_word}"
   end
 
 
-  def print_song(song, width = nil)
-    "#{spacer(song.name,width)} [#{song.genre.name}]"
+  def print_song(song, width = nil, include_artist = false, artist_width = nil)
+    artist_word = include_artist ? "#{spacer(song.artist.name,artist_width)} - " : ""
+    artist_word + "#{spacer(song.name,width)} [#{song.genre.name}]"
   end
 
 
-  def print_genre(genre, width = nil)
+  def print_genre(genre, width = nil, *args)
     song_word   = genre.songs_count   == 1 ? "Song" : "Songs"
     artist_word = genre.artists_count == 1 ? "Artist" : "Artists"
     "#{spacer(genre.name+':',width)} #{genre.artists_count} #{artist_word}, #{genre.songs_count} #{song_word}"
@@ -320,7 +335,7 @@ class Jukebox
     puts jukebox_ascii
     puts "\nWelcome to the CLI Jukebox!"
     puts ">> Type 'Help' for more info. Type 'Exit' to leave the program."
-    puts ">> Would you like to browse by 'Artist' or 'Genre'?"
+    puts ">> Would you like to browse by 'Artist', 'Song', or 'Genre'?"
   end
  
 
