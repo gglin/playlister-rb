@@ -6,7 +6,7 @@ require_relative 'lib/genre.rb'
 
 # refactor: move some of code to another module
 # add: sort while browsing
-# known bug: when arrow keys entered while rexep matching, `get_user_input': premature end of char-class:
+# known bug: when arrow keys entered while rexep matching, `filter_by_command': premature end of char-class:
 
 
 # reopen Array class
@@ -37,7 +37,7 @@ class Array
     end
   end
 
-  # returns an array of new objects, based on each element of the original array having that object as a property
+  # returns an array of new objects, based on each element of the original array having that object as a method
   def objects_to_objects(category)
     self.collect{ |object| object.send(category) }
   end
@@ -47,7 +47,7 @@ end
 
 class Jukebox
 
-  VALID_COMMANDS = [/^artists?$/, /^genres?$/, /^songs?$/, "stop", "help", "exit"]
+  VALID_COMMANDS = [/^artists?$/, /^artist\s+\S+/, /^genres?$/, /^songs?$/, "stop", "help", "exit"]
  
   attr_reader   :songs, :artists, :genres
   attr_reader   :power, :now_playing, :command
@@ -122,6 +122,9 @@ class Jukebox
     when /^artists?$/
       browse_categories(@artists)
       prompt_artists(@artists)
+    when /^artist\s+\S+/
+      @command = @command.split(/^artist\s+/)[1]
+      process_by_command(@artists)
     when /^genres?$/
       browse_categories(@genres)
       prompt_genres(@genres)
@@ -134,6 +137,31 @@ class Jukebox
     else
       puts "\n>> Command not recognized. Available commands are 'Artist', 'Song', 'Genre', 'Stop', Help', and 'Exit'"
       # puts ">>   You can also type in the name of a specific artist or genre to view available songs"
+    end
+  end
+
+
+  # find all valid objects of the given category based on pattern matching the command
+  def process_by_command(categories)
+    filtered_category_names = filter_by_command(categories)
+
+    if    @command.to_i.between?(1,categories.size)   # number entered
+      category = categories[@command.to_i - 1]
+      p @command
+      p category  
+    elsif filtered_category_names.size == 1           # a single string match found 
+      @command = filtered_category_names[0]
+      category = categories.detect{|category| category.name.downcase == @command}
+      p @command
+      p category
+    elsif filtered_category_names.size > 1             # multiple matches found - filter
+      new_categories = filtered_category_names.names_to_objects(categories)
+      browse_categories(new_categories, @command)
+      prompt_categories(new_categories)
+    else 
+      puts "\n>> Error: please enter a valid #{categories[0].class.to_s.downcase} name or number"
+      @command = gets.chomp.strip.downcase
+      process input
     end
   end
 
@@ -154,11 +182,10 @@ class Jukebox
   end
 
 
-  def get_user_input(categories)
+  def filter_by_command(categories)
     @valid_command_entered = false
-    @command = gets.chomp.strip.downcase
     @valid_command_entered = !VALID_COMMANDS.grep2(@command).empty?
-    filtered_category_names = categories.objects_to_names.grep(/^#{@command}/)
+    categories.objects_to_names.grep(/^#{@command}/)
   end
 
 
@@ -167,14 +194,16 @@ class Jukebox
   end
 
 
-  def prompt(categories)
+  def prompt(categories, skip_prompt = false)
     # initial user prompt
-    filtered_category_names = get_user_input(categories)
+    @command = gets.chomp.strip.downcase
+    filtered_category_names = filter_by_command(categories)
     
     # loop until an understood command is entered 
     until !filtered_category_names.empty? || @command.to_i.between?(1,categories.size) || @valid_command_entered
       puts "\n>> Error: please enter a valid #{categories[0].class.to_s.downcase} name or number"
-      filtered_category_names = get_user_input(categories)
+      @command = gets.chomp.strip.downcase
+      filtered_category_names = filter_by_command(categories)
     end
 
     # process the understood command
@@ -196,14 +225,14 @@ class Jukebox
   end
 
 
-  def prompt_categories(categories)
+  def prompt_categories(categories, skip_prompt = false)
     category_name = categories[0].class.to_s.downcase
-    self.send("prompt_#{category_name}s".to_sym, categories)   
+    self.send("prompt_#{category_name}s".to_sym, categories, skip_prompt)   
   end
 
 
-  def prompt_artists(artists)
-    prompt(artists) do |artist|
+  def prompt_artists(artists, skip_prompt = false)
+    prompt(artists, skip_prompt) do |artist|
       puts "\n #{print_artist(artist)}:"
       artist.songs.each_with_index do |song, index|
         puts "\t#{index+1}.    "[0,5] + " #{print_song(song)}"
@@ -214,15 +243,15 @@ class Jukebox
   end
 
 
-  def prompt_songs(songs)
-    prompt(songs) do |song|
+  def prompt_songs(songs, skip_prompt = false)
+    prompt(songs, skip_prompt) do |song|
       play(song)
     end
   end
 
 
-  def prompt_genres(genres)
-    prompt(genres) do |genre|
+  def prompt_genres(genres, skip_prompt = false)
+    prompt(genres, skip_prompt) do |genre|
       puts "\n #{print_genre(genre)}:"
       genre.songs.each_with_index do |song, index|
         puts "\t#{index+1}.    "[0,5] + " #{spacer(song.artist.name, longest_name_length(genre.artists))} - #{song.name}"
