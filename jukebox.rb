@@ -7,7 +7,21 @@ require_relative 'lib/genre.rb'
 # refactor: move some of code to another module
 # add: sort while browsing
 # browse by songs
-# 
+
+# reopen Array class to get better regexp matching
+# Enumerable.grep(pattern) only matches when element === pattern, not when element =~ pattern
+class Array
+  def grep2(pattern)
+    self.select do |element|
+      if pattern.class.to_s == "String" && element.class.to_s == "String"
+        element == pattern
+      else
+        element =~ pattern
+      end
+    end
+  end
+end
+
 
 class Jukebox
 
@@ -112,24 +126,28 @@ class Jukebox
   end
 
 
-  def prompt(categories)
-    # block executes only when unambiguous match found
-
-    # initial user prompt
+  def get_user_input(categories)
+    @valid_command_entered = false
     @command = gets.chomp.strip.downcase
-    valid_command_entered = VALID_COMMANDS.grep(@command)
+    @valid_command_entered = !VALID_COMMANDS.grep2(@command).empty?
+    # p VALID_COMMANDS.grep2(@command)
     filtered_category_names = objects_to_names(categories).grep(/^#{@command}/)
+  end
+
+
+  def prompt(categories)
+    # initial user prompt
+    filtered_category_names = get_user_input(categories)
     
     # loop until an understood command is entered 
-    until !filtered_category_names.empty? || @command.to_i.between?(1,categories.size) || valid_command_entered
+    until !filtered_category_names.empty? || @command.to_i.between?(1,categories.size) || @valid_command_entered
       puts "\n>> Error: please enter a valid #{categories[0].class.to_s.downcase} name or number"
-      @command = gets.chomp.strip.downcase
-      valid_command_entered = VALID_COMMANDS.grep(@command)
-      filtered_category_names = objects_to_names(categories).grep(/^#{@command}/)
+      filtered_category_names = get_user_input(categories)
     end
 
     # process the understood command
-    if valid_command_entered                          # home valid command entered
+    # block (yield) executes only when unambiguous match found
+    if @valid_command_entered                         # valid command entered - go to main prompt
       process_input
     elsif @command.to_i.between?(1,categories.size)   # number entered
       category = categories[@command.to_i - 1]
