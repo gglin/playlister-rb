@@ -118,17 +118,31 @@ class Jukebox
   end
 
 
+  def browse_songs(songs)
+    puts "\n  There are #{songs.size} songs:\n"
+    songs.each_with_index do |song, index|
+      puts "\t#{index+1}.    "[0,5] + " #{print_song(song, longest_name_length(songs))}"
+    end
+
+    puts "\n>> Select a song (enter either the song name or number):"
+  end
+
+
   def browse_categories(categories)
     case categories[0].class.to_s
     when "Artist"
       browse_artists(categories)
     when "Genre"
       browse_genres(categories)
+    when "Song"
+      browse_songs(categories)
     end
   end
 
 
   def prompt(categories)
+    # block executes only when unambiguous match found
+
     # initial user prompt
     @command = gets.chomp.strip.downcase
     valid_command_entered = VALID_COMMANDS.include?(@command)
@@ -144,21 +158,16 @@ class Jukebox
 
     # process the understood command
     if valid_command_entered                          # home valid command entered
-      p "valid command entered"
       process_input
     elsif @command.to_i.between?(1,categories.size)   # number entered
-      p "index entered"
       category = categories[@command.to_i - 1]
-      yield category
-    elsif filtered_category_names.size == 1           # string match found 
-      p "match found"
+      yield category  
+    elsif filtered_category_names.size == 1           # a single string match found 
       @command = filtered_category_names[0]
       category = categories.detect{|category| category.name.downcase == @command}
       yield category
-    else                                              # filtered
-      p "filter"
+    else                                              # multiple matches found - filter
       new_categories = names_to_objects(filtered_category_names, categories)
-      p new_categories
       browse_categories(new_categories)
       prompt_categories(new_categories)
     end
@@ -190,11 +199,8 @@ class Jukebox
 
 
   def prompt_songs(songs)
-    if songs.size == 1
-      play_song(songs[0])
-    else
-      prompt(songs) do |song|
-      end
+    prompt(songs) do |song|
+      play(song)
     end
   end
 
@@ -211,7 +217,7 @@ class Jukebox
   end
 
 
-  def play_song(song)
+  def play(song)
     @now_playing = song
     show_song_playing
     prompt_new_song
@@ -244,6 +250,9 @@ class Jukebox
     puts "\n  Thanks for playing our CLI Jukebox! Have a great day."
     @power = false
   end
+
+
+  private
 
 
   def show_song_playing
