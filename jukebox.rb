@@ -11,15 +11,30 @@ require_relative 'lib/genre.rb'
 # reopen Array class to get better regexp matching
 # Enumerable.grep(pattern) only matches when element === pattern, not when element =~ pattern
 class Array
+
   def grep2(pattern)
     self.select do |element|
-      if pattern.class.to_s == "String" && element.class.to_s == "String"
+      if pattern.class.to_s == element.class.to_s
         element == pattern
       else
         element =~ pattern
       end
     end
   end
+
+  # returns an array of downcased names (string), given an array of objects
+  def objects_to_names 
+    self.collect{|object| object.name.downcase}
+  end
+
+  # returns (filters) an array of objects from the categories list, given an array of downcased names (strings)
+  def names_to_objects(categories) 
+    self.collect do |name|
+      categories.detect{|object| object.name.downcase == name} 
+      # doesn't work properly if there are two of the same name, as this will always return the first result
+    end
+  end
+
 end
 
 
@@ -30,19 +45,32 @@ class Jukebox
   attr_reader   :songs, :artists, :genres
   attr_reader   :power, :now_playing, :command
  
-  def initialize(songs)
+  def initialize(songs = [])
     @songs = songs
+    setup
+    @power = false
+    puts "\nNew jukebox created with #{print_contents}"
+  end
+
+
+  def add_songs(songs)
+    # add in an array of songs
+    songs.each {|song| @songs << song}
+    setup
+    puts "\nJukebox updated to have #{print_contents}"
+  end
+
+
+  def setup
     sort_by!(@songs)
-    
+
+    # this currently has to refresh the entire list of genres and artists from @songs
+    # a faster way would be only to update this list based on added songs
     @genres = set_categories(@songs, :genre)
     sort_by!(@genres, :desc, :songs_count)
 
     @artists = set_categories(@songs, :artist)
     sort_by!(@artists)
-
-    @power = false
-
-    puts "\nNew jukebox created with #{@songs.size} songs, #{@artists.size} artists, and #{@genres.size} genres"
   end
 
 
@@ -62,19 +90,6 @@ class Jukebox
       else
             cat1.name <=> cat2.name
       end
-    end
-  end
-
-
-  def objects_to_names(object_array) # returns an array of downcased names (string), given an array of objects
-    object_array.collect{|object| object.name.downcase}
-  end
-
-
-  def names_to_objects(name_array, categories) # returns (filters) an array of objects from the categories list, given an array of downcased names (strings)
-    name_array.collect do |name|
-      categories.detect{|object| object.name.downcase == name} 
-      # doesn't work properly if there are two of the same name, as this will always return the first result
     end
   end
 
@@ -130,8 +145,12 @@ class Jukebox
     @valid_command_entered = false
     @command = gets.chomp.strip.downcase
     @valid_command_entered = !VALID_COMMANDS.grep2(@command).empty?
-    # p VALID_COMMANDS.grep2(@command)
-    filtered_category_names = objects_to_names(categories).grep(/^#{@command}/)
+    filtered_category_names = categories.objects_to_names.grep(/^#{@command}/)
+  end
+
+
+  def process_command(categories, filtered_category_names)
+    # refactor - move the conditional check for prompt(categories) into here
   end
 
 
@@ -146,7 +165,7 @@ class Jukebox
     end
 
     # process the understood command
-    # block (yield) executes only when unambiguous match found
+    # block (yield) executes only when an unambiguous match is found
     if @valid_command_entered                         # valid command entered - go to main prompt
       process_input
     elsif @command.to_i.between?(1,categories.size)   # number entered
@@ -157,7 +176,7 @@ class Jukebox
       category = categories.detect{|category| category.name.downcase == @command}
       yield category
     else                                              # multiple matches found - filter
-      new_categories = names_to_objects(filtered_category_names, categories)
+      new_categories = filtered_category_names.names_to_objects(categories)
       browse_categories(new_categories, @command)
       prompt_categories(new_categories)
     end
@@ -283,6 +302,11 @@ class Jukebox
   end
 
 
+  def print_contents
+    "#{@songs.size} songs, #{@artists.size} artists, & #{@genres.size} genres"
+  end
+
+
   def longest_name_length(categories)
     max = 0
     categories.each do |category|
@@ -353,12 +377,6 @@ class Jukebox
     }
   end
 
-  def add_song(song)
-    # this should replace the attr_accessor
-    # so that whenever a song is added to the jukebox (@songs inserted into),
-    # @genres and @artists is also updated
-  end
-
 end
  
 
@@ -370,7 +388,8 @@ songs = Song.all
 
 
 # start a jukebox CLI
-cli = Jukebox.new(songs)
+cli = Jukebox.new
+cli.add_songs(songs)
 
 # puts cli.songs
 # puts
