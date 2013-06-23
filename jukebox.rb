@@ -5,7 +5,6 @@ require_relative 'lib/genre.rb'
  
 
 # refactor: move some of code to another module
-#           move process command if block in prompt() to own method
 # add: sort while browsing
 # known bug: when arrow keys entered while rexep matching, `filter_by_command': premature end of char-class:
 
@@ -13,8 +12,11 @@ require_relative 'lib/genre.rb'
 # reopen Array class
 class Array
 
-  # Enumerable.grep(pattern) only matches when element === pattern
+  # Enumerable.grep(pattern) only matches when pattern === element
   # Enhance functionality so that it also matches when element =~ pattern
+  # /abc/ === "abc" will return true
+  # However, "abc" === /abc/ will return false
+  # /abc/ =~ "abc" and "abc" =~ /abc/ will both find a match
   def grep2(pattern)
     self.select do |element|
       if pattern.class == element.class
@@ -48,7 +50,9 @@ end
 
 class Jukebox
 
-  VALID_COMMANDS = [/^artists?$/, /^artist\s+\S+/, /^genres?$/, /^songs?$/, "stop", "help", "exit"]
+  VALID_COMMANDS = [/^artists?$/,    /^genres?$/,     /^songs?$/, 
+                    /^artist\s+\S+/, /^genre\s+\S+/,  /^song\s+\S+/, 
+                    "stop", "help", "exit"]
  
   attr_reader   :songs, :artists, :genres
   attr_reader   :power, :now_playing, :command
@@ -127,15 +131,21 @@ class Jukebox
     when /^artists?$/
       browse_categories(@artists)
       prompt_artists(@artists)
-    when /^artist\s+\S+/
-      @command = @command.split(/^artist\s+/)[1]
-      process_by_command(@artists)
     when /^genres?$/
       browse_categories(@genres)
       prompt_genres(@genres)
     when /^songs?$/
       browse_categories(@songs)
       prompt_songs(@songs)
+    when /^artist\s+\S+/
+      @command = @command.split(/^artist\s+/)[1]
+      process_by_command(@artists)
+    when /^genre\s+\S+/
+      @command = @command.split(/^genre\s+/)[1]
+      process_by_command(@genres)
+    when /^song\s+\S+/
+      @command = @command.split(/^song\s+/)[1]
+      process_by_command(@songs)
     when "stop" then stop
     when "help" then help
     when "exit" then exit
@@ -150,17 +160,14 @@ class Jukebox
   def process_by_command(categories)
     filtered_category_names = filter_by_command(categories)
 
-    if    @command.to_i.between?(1,categories.size)   # number entered
+    if @command.to_i.between?(1,categories.size)      # number entered
       category = categories[@command.to_i - 1]
-      ## prompt 
-      p @command
-      p category
+      prompt_songs_from_category(category) { |song, index| "#{index}. #{song.name}" }
     elsif filtered_category_names.size == 1           # a single string match found 
       @command = filtered_category_names[0]
       category = categories.detect{|category| category.name.downcase == @command}
-      p @command
-      p category
-    elsif filtered_category_names.size > 1             # multiple matches found - filter
+      prompt_songs_from_category(category) { |song, index| "#{index}. #{song.name}" }
+    elsif filtered_category_names.size > 1            # multiple matches found - filter
       new_categories = filtered_category_names.names_to_objects(categories)
       browse_categories(new_categories, @command)
       prompt_categories(new_categories)
@@ -233,9 +240,7 @@ class Jukebox
 
   def prompt_artists(artists, skip_prompt = false)
     prompt(artists, skip_prompt) do |artist|
-      prompt_songs_from_category(artist) do |song, index|
-        puts "\t#{index+1}.    "[0,5] + " #{print_song(song)}"
-      end
+      prompt_songs_from_category(artist)
     end
   end
 
@@ -249,20 +254,28 @@ class Jukebox
 
   def prompt_genres(genres, skip_prompt = false)
     prompt(genres, skip_prompt) do |genre|
-      prompt_songs_from_category(genre) do |song, index|
-        puts "\t#{index+1}.    "[0,5] + " #{spacer(song.artist.name, longest_name_length(genre.artists))} - #{song.name}"
-      end
+      prompt_songs_from_category(genre)
     end
   end
 
 
   def prompt_songs_from_category(category)
-    puts "\n #{print_category(category)}:"
-    category.songs.each_with_index do |song, index|
-      yield song, index
+    if category.class.to_s == "Song"
+      prompt_songs(category)
+    else
+      puts "\n #{print_category(category)}:"
+      category.songs.each_with_index do |song, index|
+        if    category.class.to_s == "Genre"
+          puts "\t#{index+1}.    "[0,5] + " #{spacer(song.artist.name, longest_name_length(category.artists))} - #{song.name}"
+        elsif category.class.to_s == "Artist"
+          puts "\t#{index+1}.    "[0,5] + " #{print_song(song)}"
+        else
+          puts "ERROR - Category not recognized!"
+        end
+      end
+      puts "\n>> Select a song to play (enter either the song name or number):"
+      prompt_songs(category.songs)
     end
-    puts "\n>> Select a song to play (enter either the song name or number):"
-    prompt_songs(category.songs)
   end
 
 
@@ -287,10 +300,11 @@ class Jukebox
   def help
     show_song_playing
     puts "\n>> HELP SCREEN"
-    puts ">> Type 'Artist' to display the list of artists (& then pick a song for that artist)" 
-    puts ">> Type 'Genre' to display the list of genres (& then pick a song of that genre)"
-    puts ">> Type 'Song' to display the list of songs (& then pick a song)"
-    puts "   - Within artists, songs, and genres, you can type part of the name to filter results"
+    puts ">> Type 'Artist(s)', 'Genre(s)', or 'Song(s)' to browse by that category"
+    puts "   - Within that category, you can type part of the name to filter results"
+    puts ">> Type '<artist, song, or genre> <# or part of name>' to choose a specific artist, song, or genre"
+    puts "   - For example, 'artist 1' will display the first artist in memory"
+    puts "   -              'song the' will display all songs starting with 'the'"
     puts ">> Type 'Stop' to stop playing the current song" if @now_playing
     puts ">> Type 'Exit' to leave the program."
   end
