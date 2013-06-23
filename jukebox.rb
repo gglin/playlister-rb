@@ -5,8 +5,9 @@ require_relative 'lib/genre.rb'
  
 
 # refactor: move some of code to another module
-# add: sort while browsing
-# known bug: when arrow keys entered while rexep matching, `filter_by_command': premature end of char-class:
+# feature add: sort while browsing
+# known bug: regexp matching with weird characters
+#   ex: when arrow keys entered, `filter_by_command': premature end of char-class:
 
 
 # reopen Array class
@@ -14,9 +15,9 @@ class Array
 
   # Enumerable.grep(pattern) only matches when pattern === element
   # Enhance functionality so that it also matches when element =~ pattern
-  # /abc/ === "abc" will return true
-  # However, "abc" === /abc/ will return false
-  # /abc/ =~ "abc" and "abc" =~ /abc/ will both find a match
+  #    /abc/ === "abc" returns true
+  #    However, "abc" === /abc/ returns false
+  #    /abc/ =~ "abc"  &  "abc" =~ /abc/ will both find a match
   def grep2(pattern)
     self.select do |element|
       if pattern.class == element.class
@@ -32,20 +33,21 @@ class Array
     self.collect{ |object| object.name.downcase }
   end
 
-  # returns (filters) an array of objects from the categories list, given an array of downcased names (strings)
-  def names_to_objects(categories) 
+  # returns (filters) an array of objects from the original objects list, given an array of downcased names (strings)
+  def names_to_objects(objects) 
     self.collect do |name|
-      categories.detect{|object| object.name.downcase == name} 
+      objects.detect{ |object| object.name.downcase == name } 
       # doesn't work properly if there are two of the same name, as this will always return the first result
     end
   end
 
-  # returns an array of new objects, based on each element of the original array having that object as a method
-  def objects_to_objects(category)
-    self.collect{ |object| object.send(category) }
+  # returns an array of new objects, based on each element of the original array having that new object as a method name
+  def objects_to_objects(new_object)
+    self.collect{ |object| object.send(new_object) }
   end
 
 end
+
 
 
 class Jukebox
@@ -55,7 +57,7 @@ class Jukebox
                     "stop", "help", "exit"]
  
   attr_reader   :songs, :artists, :genres
-  attr_reader   :power, :now_playing, :command
+  attr_reader   :power, :now_playing
  
   def initialize(songs = [])
     @songs = songs
@@ -66,7 +68,7 @@ class Jukebox
 
 
   def add_songs(songs)
-    # add in an array of songs
+    # input must be an array of songs
     songs.each {|song| @songs << song}
     setup
     puts "\nJukebox updated to have #{print_contents}"
@@ -76,7 +78,7 @@ class Jukebox
   def setup
     sort_by!(@songs)
 
-    # this currently has to refresh the entire list of genres and artists from @songs
+    # this currently has to refresh the entire list of @genres and @artists from @songs
     # a faster way would be only to update this list based on added songs
     @genres = set_categories(@songs, :genre)
     sort_by!(@genres, :desc, :songs_count)
@@ -151,7 +153,7 @@ class Jukebox
     when "exit" then exit
     else
       puts "\n>> Command not recognized. Available commands are 'Artist', 'Song', 'Genre', 'Stop', Help', and 'Exit'"
-      # puts ">>   You can also type in the name of a specific artist or genre to view available songs"
+      puts ">> You can also type in the name or # of a specific artist, song, or genre, e.g. 'Artist 1' or 'Genre Rap'"
     end
   end
 
@@ -162,11 +164,11 @@ class Jukebox
 
     if @command.to_i.between?(1,categories.size)      # number entered
       category = categories[@command.to_i - 1]
-      prompt_songs_from_category(category) { |song, index| "#{index}. #{song.name}" }
+      prompt_songs_from_category(category)
     elsif filtered_category_names.size == 1           # a single string match found 
       @command = filtered_category_names[0]
       category = categories.detect{|category| category.name.downcase == @command}
-      prompt_songs_from_category(category) { |song, index| "#{index}. #{song.name}" }
+      prompt_songs_from_category(category)
     elsif filtered_category_names.size > 1            # multiple matches found - filter
       new_categories = filtered_category_names.names_to_objects(categories)
       browse_categories(new_categories, @command)
@@ -201,7 +203,7 @@ class Jukebox
   end
 
 
-  def prompt(categories, skip_prompt = false)
+  def prompt(categories)
     # initial user prompt
     @command = gets.chomp.strip.downcase
     filtered_category_names = filter_by_command(categories)
@@ -232,28 +234,28 @@ class Jukebox
   end
 
 
-  def prompt_categories(categories, skip_prompt = false)
+  def prompt_categories(categories)
     category_name = categories[0].class.to_s.downcase
-    self.send("prompt_#{category_name}s".to_sym, categories, skip_prompt)   
+    self.send("prompt_#{category_name}s".to_sym, categories)   
   end
 
 
-  def prompt_artists(artists, skip_prompt = false)
-    prompt(artists, skip_prompt) do |artist|
+  def prompt_artists(artists)
+    prompt(artists) do |artist|
       prompt_songs_from_category(artist)
     end
   end
 
 
-  def prompt_songs(songs, skip_prompt = false)
-    prompt(songs, skip_prompt) do |song|
+  def prompt_songs(songs)
+    prompt(songs) do |song|
       play(song)
     end
   end
 
 
-  def prompt_genres(genres, skip_prompt = false)
-    prompt(genres, skip_prompt) do |genre|
+  def prompt_genres(genres)
+    prompt(genres) do |genre|
       prompt_songs_from_category(genre)
     end
   end
@@ -261,7 +263,7 @@ class Jukebox
 
   def prompt_songs_from_category(category)
     if category.class.to_s == "Song"
-      prompt_songs(category)
+      play(category)
     else
       puts "\n #{print_category(category)}:"
       category.songs.each_with_index do |song, index|
@@ -302,11 +304,13 @@ class Jukebox
     puts "\n>> HELP SCREEN"
     puts ">> Type 'Artist(s)', 'Genre(s)', or 'Song(s)' to browse by that category"
     puts "   - Within that category, you can type part of the name to filter results"
-    puts ">> Type '<artist, song, or genre> <# or part of name>' to choose a specific artist, song, or genre"
-    puts "   - For example, 'artist 1' will display the first artist in memory"
-    puts "   -              'song the' will display all songs starting with 'the'"
+    puts "   - Within that category, you can also type its number to select a specific artist, song, or genre"
+    puts ">> Type '<Artist, Song, or Genre> <number or part of name>' to choose a specific artist, song, or genre. e.g.:"
+    puts "   - 'Artist 1' will display the first artist in the library"
+    puts "   - 'Song the' will display all songs starting with 'the' if there is >1 such song"
+    puts "   - 'Song ruby' will play the song 'Ruby' if it is the only song to start with 'ruby'"
     puts ">> Type 'Stop' to stop playing the current song" if @now_playing
-    puts ">> Type 'Exit' to leave the program."
+    puts ">> Type 'Exit' to leave the program"
   end
 
 
@@ -329,7 +333,10 @@ class Jukebox
 
 
   def prompt_new_song
-    puts "\n>> Type 'Artist', 'Song', or 'Genre' to browse by category. Type 'Exit' to take a break."
+    puts "\n>> Would you like to choose a new song?"
+    puts ">> Type '<Artist, Song, or Genre> <number or part of name>' to choose a specific artist, song, or genre"
+    puts ">> Type 'Artist(s)', 'Song(s)', or 'Genre(s)' to browse by category"
+    puts ">> Type 'Stop' to stop playing the current song" if @now_playing
   end
 
 
@@ -386,8 +393,9 @@ class Jukebox
   def welcome
     puts jukebox_ascii
     puts "\nWelcome to the CLI Jukebox!"
-    puts ">> Type 'Help' for more info. Type 'Exit' to leave the program."
+    puts ">> Type 'Help' for more info. Type 'Exit' to leave the program"
     puts ">> Would you like to browse by 'Artist', 'Song', or 'Genre'?"
+    puts ">> You can also choose a specific artist, song, or genre, e.g. 'Artist 1' or 'Genre rap'"
   end
  
 
