@@ -17,7 +17,7 @@ class Array
   # Enhance functionality so that it also matches when element =~ pattern
   def grep2(pattern)
     self.select do |element|
-      if pattern.class.to_s == element.class.to_s
+      if pattern.class == element.class
         element == pattern
       else
         element =~ pattern
@@ -152,8 +152,9 @@ class Jukebox
 
     if    @command.to_i.between?(1,categories.size)   # number entered
       category = categories[@command.to_i - 1]
+      ## prompt 
       p @command
-      p category  
+      p category
     elsif filtered_category_names.size == 1           # a single string match found 
       @command = filtered_category_names[0]
       category = categories.detect{|category| category.name.downcase == @command}
@@ -171,13 +172,13 @@ class Jukebox
 
 
   def browse_categories(categories, string_match = nil)
-    starting_filter = string_match.nil? ? "" : "starting with '#{string_match}'"
+    starting_filter = string_match.nil? ? "" : " starting with '#{string_match}'"
 
     category_name = categories[0].class.to_s.downcase
     include_artist   = category_name == "song" ? true : false
     artist_max_width = category_name == "song" ? longest_name_length( categories.objects_to_objects(:artist) ) : nil
 
-    puts "\n  There are #{categories.size} #{category_name}s " + starting_filter + ":\n"
+    puts "\n  There are #{categories.size} #{category_name}s#{starting_filter}:\n"
     categories.each_with_index do |category, index|
       puts "\t#{index+1}.    "[0,5] + " #{print_category(category, longest_name_length(categories), include_artist, artist_max_width)}"
     end
