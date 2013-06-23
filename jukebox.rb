@@ -52,9 +52,7 @@ end
 
 class Jukebox
 
-  VALID_COMMANDS = [/^artists?$/,    /^genres?$/,     /^songs?$/, 
-                    /^artist\s+\S+/, /^genre\s+\S+/,  /^song\s+\S+/, 
-                    "stop", "help", "exit"]
+  VALID_COMMANDS = [/^(artist|song|genre)s?$/, /^(artist|song|genre)\s+\S+/, "stop", "help", "exit"]
  
   attr_reader   :songs, :artists, :genres
   attr_reader   :power, :now_playing
@@ -130,24 +128,15 @@ class Jukebox
 
   def process_input
     case @command
-    when /^artists?$/
-      browse_categories(@artists)
-      prompt_artists(@artists)
-    when /^genres?$/
-      browse_categories(@genres)
-      prompt_genres(@genres)
-    when /^songs?$/
-      browse_categories(@songs)
-      prompt_songs(@songs)
-    when /^artist\s+\S+/
-      @command = @command.split(/^artist\s+/)[1]
-      process_by_command(@artists)
-    when /^genre\s+\S+/
-      @command = @command.split(/^genre\s+/)[1]
-      process_by_command(@genres)
-    when /^song\s+\S+/
-      @command = @command.split(/^song\s+/)[1]
-      process_by_command(@songs)
+    when /^(artist|song|genre)s?$/
+      @command << "s" if @command[-1] != "s"
+      browse_categories(self.send(@command.to_sym))
+      prompt_categories(self.send(@command.to_sym))
+    when /^(artist|song|genre)\s+\S+/
+      category   = @command.split(/\s+/)[0]
+      categories = (category + "s").to_sym
+      @command   = @command.sub(/^#{category}\s+/,"")
+      process_by_command(self.send(categories))
     when "stop" then stop
     when "help" then help
     when "exit" then exit
