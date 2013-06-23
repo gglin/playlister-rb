@@ -5,6 +5,7 @@ require_relative 'lib/genre.rb'
  
 
 # refactor: move some of code to another module
+#           move process command if block in prompt() to own method
 # add: sort while browsing
 # known bug: when arrow keys entered while rexep matching, `filter_by_command': premature end of char-class:
 
@@ -104,7 +105,11 @@ class Jukebox
   def start
     @power = true 
     welcome
+    prompt_loop
+  end
 
+
+  def prompt_loop
     while on?
       @command = gets.chomp.strip.downcase
       process_input
@@ -159,9 +164,8 @@ class Jukebox
       browse_categories(new_categories, @command)
       prompt_categories(new_categories)
     else 
-      puts "\n>> Error: please enter a valid #{categories[0].class.to_s.downcase} name or number"
-      @command = gets.chomp.strip.downcase
-      process input
+      prompt_error(categories)
+      prompt_loop
     end
   end
 
@@ -189,11 +193,6 @@ class Jukebox
   end
 
 
-  def process_command(categories, filtered_category_names)
-    # refactor - move the conditional check for prompt(categories) into here
-  end
-
-
   def prompt(categories, skip_prompt = false)
     # initial user prompt
     @command = gets.chomp.strip.downcase
@@ -201,7 +200,7 @@ class Jukebox
     
     # loop until an understood command is entered 
     until !filtered_category_names.empty? || @command.to_i.between?(1,categories.size) || @valid_command_entered
-      puts "\n>> Error: please enter a valid #{categories[0].class.to_s.downcase} name or number"
+      prompt_error(categories)
       @command = gets.chomp.strip.downcase
       filtered_category_names = filter_by_command(categories)
     end
@@ -233,12 +232,9 @@ class Jukebox
 
   def prompt_artists(artists, skip_prompt = false)
     prompt(artists, skip_prompt) do |artist|
-      puts "\n #{print_artist(artist)}:"
-      artist.songs.each_with_index do |song, index|
+      prompt_songs_from_category(artist) do |song, index|
         puts "\t#{index+1}.    "[0,5] + " #{print_song(song)}"
       end
-      puts "\n>> Select a song to play (enter either the song name or number):"
-      prompt_songs(artist.songs)
     end
   end
 
@@ -252,13 +248,20 @@ class Jukebox
 
   def prompt_genres(genres, skip_prompt = false)
     prompt(genres, skip_prompt) do |genre|
-      puts "\n #{print_genre(genre)}:"
-      genre.songs.each_with_index do |song, index|
+      prompt_songs_from_category(genre) do |song, index|
         puts "\t#{index+1}.    "[0,5] + " #{spacer(song.artist.name, longest_name_length(genre.artists))} - #{song.name}"
       end
-      puts "\n>> Select a song to play (enter either the song name or number):"
-      prompt_songs(genre.songs)
     end
+  end
+
+
+  def prompt_songs_from_category(category)
+    puts "\n #{print_category(category)}:"
+    category.songs.each_with_index do |song, index|
+      yield song, index
+    end
+    puts "\n>> Select a song to play (enter either the song name or number):"
+    prompt_songs(category.songs)
   end
 
 
@@ -312,6 +315,11 @@ class Jukebox
 
   def prompt_new_song
     puts "\n>> Type 'Artist', 'Song', or 'Genre' to browse by category. Type 'Exit' to take a break."
+  end
+
+
+  def prompt_error(categories)
+    puts "\n>> Error: please enter a valid #{categories[0].class.to_s.downcase} name or number"
   end
 
 
