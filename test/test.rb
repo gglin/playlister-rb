@@ -1,6 +1,7 @@
-require_relative 'lib/artist.rb'
-require_relative 'lib/song.rb'
-require_relative 'lib/genre.rb'
+require_relative '../lib/concerns/memorable'
+require_relative '../lib/models/artist'
+require_relative '../lib/models/song'
+require_relative '../lib/models/genre'
 require 'debugger'
 
 

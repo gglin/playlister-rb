@@ -1,8 +1,4 @@
-require_relative 'parser.rb'
-require_relative 'lib/artist.rb'
-require_relative 'lib/song.rb'
-require_relative 'lib/genre.rb'
- 
+require_relative 'environment'
 
 # refactor: move some of code to another module
 # feature add: sort while browsing
@@ -445,8 +441,8 @@ end
  
 
 # Parse the data folder and create a new local variable which holds all the songs
-parser = Parser.new
-parser.create_playlist
+parser = LibraryParser.new
+parser.call('data')
 
 songs = Song.all
 

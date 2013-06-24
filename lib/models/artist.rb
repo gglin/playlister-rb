@@ -1,6 +1,6 @@
 # require_relative 'song'
 # require_relative 'genre'
-require_relative 'memorable'
+require_relative '../concerns/memorable'
 
 class Artist
 

@@ -1,8 +1,9 @@
-require 'rack'
-
-require_relative 'environment'
-
 module WebApp
+
+  class Main
+    def call(env)
+    end
+  end
 
   class Index
     def initialize(app)
@@ -10,6 +11,15 @@ module WebApp
     end
 
     def call(env)
+      template = ERB.new(File.read('views/index.html.erb'))
+
+      b = binding
+      html = template.result(b)
+      # define my erb template
+      # generate my ERB template with all the artists
+      # and send back as the content
+
+      [200, {'Content-Type' => 'text/html'}, [html]]
     end
   end
 
@@ -19,10 +29,16 @@ module WebApp
     end
 
     def call(env)
-      @artists = Artist.all
+      artists = Artist.all
+      template = ERB.new(File.read('views/artists.html.erb'))
 
-      b = bind
+      b = binding
       html = template.result(b)
+      # define my erb template
+      # generate my ERB template with all the artists
+      # and send back as the content
+
+      [200, {'Content-Type' => 'text/html'}, [html]]
     end
   end
 

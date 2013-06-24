@@ -1,4 +1,4 @@
-require_relative 'memorable'
+require_relative '../concerns/memorable'
 
 class Genre
 

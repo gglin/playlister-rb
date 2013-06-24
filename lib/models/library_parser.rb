@@ -1,28 +1,11 @@
-class Parser
-
-  require_relative 'lib/artist.rb'
-  require_relative 'lib/song.rb'
-  require_relative 'lib/genre.rb'
+require_relative 'artist'
+require_relative 'song'
+require_relative 'genre'
 
 
-  # Either instantiate a new object of class "klass" & name "name"
-  #   or find an object with that "name" if it already exists in the "list"
-  def add_object_to_class(klass, name, list = [])
+class LibraryParser
 
-    if list.include? name
-      return klass.all.select{|element| element.name == name}.first
-    else
-      list << name
-      return klass.new(name)
-    end
-    
-  end
-
-
-  def create_playlist
-
-    folder = 'data'
-
+  def call(folder = '.')
     artist_list = []
     song_list = []
     genre_list = []
@@ -45,8 +28,19 @@ class Parser
       artist.add_song(song)
     end
 
-    [artist_list, song_list, genre_list]
+    [song_list, artist_list, genre_list]
+  end
 
+
+  # Either instantiate a new object of class "klass" & name "name"
+  #   or find an object with that "name" if it already exists in the "list"
+  def add_object_to_class(klass, name, list = [])
+    if list.include? name
+      return klass.all.select{|element| element.name == name}.first
+    else
+      list << name
+      return klass.new(name)
+    end
   end
 
 end
