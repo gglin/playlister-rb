@@ -8,10 +8,16 @@
 # require_relative 'lib/models/genre'
 # require_relative 'lib/models/library_parser'
 
-Dir.glob('./lib/concerns/*.rb').each do |concern|
-  require concern
-end
+# Dir.glob('./lib/concerns/*.rb').each do |concern|
+#   require concern
+# end
 
-Dir.glob('./lib/models/*.rb').each do |model|
-  require model
+# Dir.glob('./lib/models/*.rb').each do |model|
+#   require model
+# end
+
+Dir.glob('./lib/*').each do |folder|
+  Dir.glob(folder + '/*.rb').each do |file|
+    require file
+  end
 end

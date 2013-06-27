@@ -69,6 +69,10 @@ class Genre
     "#{spacer(self.name+':',width)} #{self.artists_count} #{artist_word}, #{self.songs_count} #{song_word}"
   end
 
+  def to_param
+    self.slug
+  end
+
 end
 
 

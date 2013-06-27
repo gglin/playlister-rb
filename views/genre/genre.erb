@@ -1,4 +1,4 @@
-<h3><a href="/genres/">Genres</a></h3>
+<h3><a href="/genres">Genres</a></h3>
 <h2><strong><%= @genre.name.split(/(\W)/).map(&:capitalize).join %></strong></h2>
 
 <ol>
@@ -6,7 +6,7 @@
   <% max_song   = Song.longest_name_length(songz) %>
   <% max_artist = Artist.longest_name_length(songz.collect{|song| song.artist}) %>
   <% songz.each do |song| %>
-    <li><a href="/songs/<%= song.id %>"><pre><%= song.print_with_links(max_song, true, max_artist, false) %></pre></a></li>
+    <li><a href="/songs/<%= song.to_param %>"><pre><%= song.print_with_links(max_song, true, max_artist, false) %></pre></a></li>
   <% end %>
 </ol>
 

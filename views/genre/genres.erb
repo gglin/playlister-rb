@@ -4,7 +4,7 @@
   <% genrez = @genres.sort{|g1, g2| g1.name.downcase <=> g2.name.downcase} %>
   <% max = Genre.longest_name_length(genrez) %>
   <% genrez.each do |genre| %>
-    <li><a href="/genres/<%= genre.id %>"><pre><%= genre.print(max) %></pre></a></li>
+    <li><a href="/genres/<%= genre.to_param %>"><pre><%= genre.print(max) %></pre></a></li>
   <% end %>
 </ol>
 

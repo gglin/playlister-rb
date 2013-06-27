@@ -68,10 +68,28 @@ class Song
   end
 
   def print_with_links(width = nil, include_artist = false, artist_width = nil, include_genre = true)
-    artist_word = include_artist ? "<a href=\"/artists/#{self.artist.id}\">#{spacer(self.artist.name, artist_width)}</a> - " : ""
-    genre_word  = include_genre  ? "<a href=\"/genres/#{self.genre.id}\">[#{self.genre.name}]</a>" : ""
-    artist_word + "<a href=\"/songs/#{self.id}\">#{spacer(self.name,width)}</a>" + genre_word
+    artist_word = include_artist ? "<a href=\"/artists/#{self.artist.to_param}\">#{spacer(self.artist.name, artist_width)}</a> - " : ""
+    genre_word  = include_genre  ? "<a href=\"/genres/#{self.genre.to_param}\">[#{self.genre.name}]</a>" : ""
+    artist_word + "<a href=\"/songs/#{self.to_param}\">#{spacer(self.name,width)}</a>" + genre_word
   end
+
+  def self.new_from_params(params)
+    self.new.tap do |s|
+      s.name = params[:song_name]
+      s.genre = Genre.find_or_create_by_name(params[:genre_name])
+      s.artist = Artist.find_by_id(params[:artist_name]).add_song(s)
+    end
+  end
+
+  def youtube
+    id = YoutubeSearch.search("#{self.artist.name} #{self.name}").first["video_id"]
+    url = "http://www.youtube.com/watch?v=#{id}"
+    OEmbed::Providers::Youtube.get(url).html
+  end
+
+  # def to_param
+  #   self.id
+  # end
 
 end
 

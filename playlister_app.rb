@@ -1,5 +1,6 @@
 
 class PlaylisterApp < Sinatra::Base
+
   configure :development do
     register Sinatra::Reloader
   end
@@ -11,36 +12,43 @@ class PlaylisterApp < Sinatra::Base
     erb :'index.html'
   end
 
-  get '/artists/' do
+  get '/artists' do
     @artists = Artist.all
     erb :'artist/artists'
   end
 
-  get '/songs/' do
+  get '/songs' do
     @songs = Song.all
     erb :'song/songs'
   end
 
-  get '/genres/' do
+  get '/genres' do
     @genres = Genre.all
     erb :'genre/genres'
   end
 
-  get '/artists/:id' do
-    @artist = Artist.find_by_id(params[:id])
+  get '/songs/new' do
+    erb :'song/new'
+  end
+
+  post '/songs' do
+    song = Song.new_from_params(params)
+    redirect "/songs/#{song.to_param}"
+  end
+
+  get '/artists/:slug' do
+    @artist = Artist.find_by_slug(params[:slug])
     erb :'artist/artist'
   end
 
-  get '/songs/:id' do
-    @song = Song.find_by_id(params[:id])
-    id = YoutubeSearch.search("#{@song.artist.name} #{@song.name}").first["video_id"]
-    url = "http://www.youtube.com/watch?v=#{id}"
-    @embedcode = OEmbed::Providers::Youtube.get(url).html
+  get '/songs/:slug' do
+    @song = Song.find_by_slug(params[:slug])
+    @embedcode = @song.youtube
     erb :'song/song'
   end
 
-  get '/genres/:id' do
-    @genre = Genre.find_by_id(params[:id])
+  get '/genres/:slug' do
+    @genre = Genre.find_by_slug(params[:slug])
     erb :'genre/genre'
   end
 
