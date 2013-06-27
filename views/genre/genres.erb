@@ -1,9 +1,9 @@
 <h3>Genres</h3>
 
 <ol>
-  <% genres = @genres.sort{|g1, g2| g1.name <=> g2.name} %>
-  <% max = Genre.longest_name_length(genres) %>
-  <% genres.each do |genre| %>
+  <% genrez = @genres.sort{|g1, g2| g1.name.downcase <=> g2.name.downcase} %>
+  <% max = Genre.longest_name_length(genrez) %>
+  <% genrez.each do |genre| %>
     <li><a href="/genres/<%= genre.id %>"><pre><%= genre.print(max) %></pre></a></li>
   <% end %>
 </ol>

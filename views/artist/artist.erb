@@ -2,8 +2,9 @@
 <h2><strong><%= @artist.name %></strong></h2>
 
 <ol>
-  <% max = Song.longest_name_length(@artist.songs) %>
-  <% @artist.songs.each do |song| %>
+  <% songz = @artist.songs.sort{|s1, s2| s1.name.downcase <=> s2.name.downcase} %>
+  <% max = Song.longest_name_length(songz) %>
+  <% songz.each do |song| %>
     <li><a href="/songs/<%= song.id %>"><pre><%= song.print_with_links(max) %></pre></a></li>
   <% end %>
 </ol>

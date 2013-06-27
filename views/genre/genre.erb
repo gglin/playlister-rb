@@ -2,9 +2,10 @@
 <h2><strong><%= @genre.name.split(/(\W)/).map(&:capitalize).join %></strong></h2>
 
 <ol>
-  <% max_song   = Song.longest_name_length(@genre.songs) %>
-  <% max_artist = Artist.longest_name_length(@genre.songs.collect{|song| song.artist}) %>
-  <% @genre.songs.each do |song| %>
+  <% songz = @genre.songs.sort{|s1, s2| s1.artist.name.downcase <=> s2.artist.name.downcase} %>
+  <% max_song   = Song.longest_name_length(songz) %>
+  <% max_artist = Artist.longest_name_length(songz.collect{|song| song.artist}) %>
+  <% songz.each do |song| %>
     <li><a href="/songs/<%= song.id %>"><pre><%= song.print_with_links(max_song, true, max_artist, false) %></pre></a></li>
   <% end %>
 </ol>
