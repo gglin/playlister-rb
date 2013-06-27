@@ -1,15 +1,27 @@
 module Memorable
+  module InstanceMethods
 
-  def reset_all
-    self.all.clear
+    def initialize(name = nil)
+      @id = self.class.count + 1
+      self.class.all << self
+      @name = name
+    end
+    
   end
 
-  def count
-    self.all.size
-  end
+  module ClassMethods
 
-  def all
-    self.all
-  end
+    def reset_all
+      @all = []
+    end
 
+    def count
+      @all.size
+    end
+
+    def all
+      @all ||= []
+    end
+
+  end
 end

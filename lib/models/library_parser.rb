@@ -5,16 +5,20 @@ require_relative 'genre'
 
 class LibraryParser
 
-  def call(folder = '.')
+  def initialize(dir_name = '.')
+    @dir_name = dir_name
+  end
+
+  def call(dir_name)
     artist_list = []
     song_list = []
     genre_list = []
 
-    files = Dir["#{folder}/*.mp3"]
+    files = Dir["#{dir_name}/*.mp3"]
 
     files.each do |filename|
       # Parse mp3 filenames
-      artist_name = filename.split("#{folder}/").last.split(" - ").first
+      artist_name = filename.split("#{dir_name}/").last.split(" - ").first
       song_name   = filename.split(" - ").last.split(" [").first
       genre_name  = filename.split(" - ").last.split(" [").last.split("].").first
 

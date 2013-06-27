@@ -1,0 +1,14 @@
+<h3><a href="/songs/">Songs</a></h3>
+<h2><%= @song.print(nil, true, nil, false) %></h2>
+
+<ul>
+<li>Artist: <a href="/artists/<%= @song.artist.id %>"><%= @song.artist.name %></a></li>
+<li>Genre:  <a href="/genres/<%= @song.genre.id %>"><%= @song.genre.name %></a></li>
+</ul>
+
+<br>
+
+<iframe width="672" height="504" src="//www.youtube.com/embed/uFMMXRoSxnA" frameborder="0" allowfullscreen></iframe>
+
+<br>
+<br>

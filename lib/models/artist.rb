@@ -1,24 +1,43 @@
 # require_relative 'song'
 # require_relative 'genre'
 require_relative '../concerns/memorable'
+require_relative '../concerns/findable'
+require_relative '../concerns/listable'
+require_relative '../concerns/sluggable'
 
 class Artist
 
-  extend Memorable
-  attr_accessor :name, :songs
-  All = []
+  attr_accessor :id, :name, :songs
 
-  def self.all
-    All
-  end
+  extend  Memorable::ClassMethods
+  include Memorable::InstanceMethods
+
+  extend  Sluggable::ClassMethods
+  include Sluggable::InstanceMethods
+
+  extend  Listable
+  extend  Findable
+
+  extend  Prettifiable::ClassMethods
+  include Prettifiable::InstanceMethods
 
   def self.reset_artists
     reset_all
   end
   reset_artists
 
+  def self.action(index)
+    self.all[index-1].list_songs
+  end
+
+  def list_songs
+    Song.all.each_with_index do |s, index|
+      puts "#{index+1}. #{s.name}" if s.genre == self
+    end
+  end
+
   def initialize(name = nil)
-    All << self
+    super
     @songs = []
     @name = name
   end
@@ -28,7 +47,6 @@ class Artist
   end
 
   def add_song(song)
-    
     # Add song into the artist's catalog
     @songs ||= []
     @songs << song
@@ -44,11 +62,10 @@ class Artist
         end
       end
     end 
-
   end
 
   def genres # returns an array of genres
-    @songs.collect { |song| song.genre }
+    @songs.collect { |song| song.genre }.flatten.compact.uniq
   end
 
   def inspect
@@ -61,6 +78,11 @@ class Artist
 
   def url
     "#{@name.downcase.strip}.html"
+  end
+
+  def print(width = nil, *args)
+    song_word = self.songs_count == 1 ? "Song" : "Songs"
+    "#{spacer(self.name,width)} - #{self.songs_count} #{song_word}"
   end
 
 end

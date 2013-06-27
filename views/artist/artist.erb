@@ -1,0 +1,11 @@
+<h3><a href="/artists/">Artists</a></h3>
+<h2><strong><%= @artist.name %></strong></h2>
+
+<ol>
+  <% max = Song.longest_name_length(@artist.songs) %>
+  <% @artist.songs.each do |song| %>
+    <li><a href="/songs/<%= song.id %>"><pre><%= song.print_with_links(max) %></pre></a></li>
+  <% end %>
+</ol>
+
+<br>
