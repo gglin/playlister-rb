@@ -59,10 +59,6 @@ class Genre
     "#{@name}"
   end
 
-  def url
-    "#{@name.downcase.strip}.html"
-  end
-
   def print(width = nil, *args)
     song_word   = self.songs_count   == 1 ? "Song" : "Songs"
     artist_word = self.artists_count == 1 ? "Artist" : "Artists"

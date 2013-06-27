@@ -17,14 +17,27 @@ class PlaylisterApp < Sinatra::Base
     erb :'artist/artists'
   end
 
-  get '/songs' do
-    @songs = Song.all
-    erb :'song/songs'
+  get '/artists/new' do
+    erb :'artist/new'
+  end
+
+  post '/artists' do
+    # raise params
+    artist = Artist.new
+    artist.name = params[:artist_name]
+    artist.add_songs(params[:songs])
+
+    redirect "/artists/#{artist.to_param}"
   end
 
   get '/genres' do
     @genres = Genre.all
     erb :'genre/genres'
+  end
+
+  get '/songs' do
+    @songs = Song.all
+    erb :'song/songs'
   end
 
   get '/songs/new' do

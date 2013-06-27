@@ -53,10 +53,6 @@ class Song
     "#{@artist.name} - #{@name} [#{@genre.name}]"
   end
 
-  def url
-    "#{self.name}.html"
-  end
-
   def title
     "#{self.artist.name} - #{self.name} [#{self.genre.name}]"
   end
@@ -76,8 +72,10 @@ class Song
   def self.new_from_params(params)
     self.new.tap do |s|
       s.name = params[:song_name]
-      s.genre = Genre.find_or_create_by_name(params[:genre_name])
-      s.artist = Artist.find_by_id(params[:artist_name]).add_song(s)
+      s.genre     = Genre.find_or_create_by_name(params[:genre_name])
+      song_artist = Artist.find_or_create_by_name(params[:artist_name])
+      song_artist.add_song(s)
+      s.artist = song_artist
     end
   end
 

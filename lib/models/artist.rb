@@ -76,13 +76,18 @@ class Artist
     "#{@name} - #{@songs}"
   end
 
-  def url
-    "#{@name.downcase.strip}.html"
-  end
-
   def print(width = nil, *args)
     song_word = self.songs_count == 1 ? "Song" : "Songs"
     "#{spacer(self.name,width)} - #{self.songs_count} #{song_word}"
+  end
+
+  def add_songs(params)
+    params.each do |song_hash|
+      s = Song.new
+      s.genre = Genre.find_or_create_by_name(song_hash[:genre])
+      s.name = song_hash[:name]
+      self.add_song(s)
+    end
   end
 
 end
