@@ -33,6 +33,9 @@ class PlaylisterApp < Sinatra::Base
 
   get '/songs/:id' do
     @song = Song.find_by_id(params[:id])
+    id = YoutubeSearch.search("#{@song.artist.name} #{@song.name}").first["video_id"]
+    url = "http://www.youtube.com/watch?v=#{id}"
+    @embedcode = OEmbed::Providers::Youtube.get(url).html
     erb :'song/song'
   end
 

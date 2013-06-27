@@ -1,7 +1,9 @@
 require 'bundler/setup'
 require 'sinatra/base'
 require 'sinatra/reloader'
+
 require 'youtube_search'
+require 'oembed'
 
 require './environment'
 require './playlister_app'
