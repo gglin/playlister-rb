@@ -84,8 +84,8 @@ class Artist
   def add_songs(params)
     params.each do |song_hash|
       s = Song.new
-      s.genre = Genre.find_or_create_by_name(song_hash[:genre])
-      s.name = song_hash[:name]
+      s.genre = Genre.find_or_create_by_name(song_hash[:genre].strip)
+      s.name = song_hash[:name].strip
       self.add_song(s)
     end
   end

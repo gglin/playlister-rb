@@ -22,12 +22,12 @@ class PlaylisterApp < Sinatra::Base
   end
 
   post '/artists' do
-    empty_keys = params.values.grep(/^\s+$/).empty?
+    empty_keys = params.values.include?("") || !params.values.grep(/^\s+$/).empty?
 
     empty_song_keys = false
     params[:songs].each do |song_hash|
       song_hash.values.each do |value|
-        empty_song_keys = true if value =~ /^\s+$/
+        empty_song_keys = true if value == "" || value =~ /^\s+$/
       end
     end
 
@@ -35,7 +35,7 @@ class PlaylisterApp < Sinatra::Base
       redirect "/artists/new"
     else
       artist = Artist.new
-      artist.name = params[:artist_name]
+      artist.name = params[:artist_name].strip
       artist.add_songs(params[:songs])
       redirect "/artists/#{artist.to_param}"
     end
@@ -56,8 +56,7 @@ class PlaylisterApp < Sinatra::Base
   end
 
   post '/songs' do
-    empty_keys = params.values.grep(/^\s+$/)
-    puts empty_keys
+    empty_keys = params.values.include?("") || !params.values.grep(/^\s+$/).empty?
     if empty_keys
       redirect "/songs/new"
     else
