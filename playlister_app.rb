@@ -6,9 +6,9 @@ class PlaylisterApp < Sinatra::Base
   end
 
   get '/' do
-    @artists = Artist.all
-    @songs = Song.all
-    @genres = Genre.all
+    # @artists = Artist.all
+    # @songs = Song.all
+    # @genres = Genre.all
     erb :'index.html'
   end
 
@@ -22,12 +22,23 @@ class PlaylisterApp < Sinatra::Base
   end
 
   post '/artists' do
-    # raise params
-    artist = Artist.new
-    artist.name = params[:artist_name]
-    artist.add_songs(params[:songs])
+    empty_keys = params.values.grep(/^\s+$/).empty?
 
-    redirect "/artists/#{artist.to_param}"
+    empty_song_keys = false
+    params[:songs].each do |song_hash|
+      song_hash.values.each do |value|
+        empty_song_keys = true if value =~ /^\s+$/
+      end
+    end
+
+    if empty_keys || empty_song_keys
+      redirect "/artists/new"
+    else
+      artist = Artist.new
+      artist.name = params[:artist_name]
+      artist.add_songs(params[:songs])
+      redirect "/artists/#{artist.to_param}"
+    end
   end
 
   get '/genres' do
@@ -45,8 +56,14 @@ class PlaylisterApp < Sinatra::Base
   end
 
   post '/songs' do
-    song = Song.new_from_params(params)
-    redirect "/songs/#{song.to_param}"
+    empty_keys = params.values.grep(/^\s+$/)
+    puts empty_keys
+    if empty_keys
+      redirect "/songs/new"
+    else
+      song = Song.new_from_params(params)
+      redirect "/songs/#{song.to_param}"
+    end
   end
 
   get '/artists/:slug' do

@@ -6,7 +6,7 @@ module Sluggable
     end
 
     def slug
-      self.name.downcase.gsub(" ", "-")
+      self.name.downcase.strip.gsub(/(\s|\\|\/)/, "-")
     end
     
   end

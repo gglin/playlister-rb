@@ -1,31 +1,39 @@
-<h1>New Artist</h1>
+<h3>Add New Artist</h3>
 
 <form action="/artists" method="POST">
-
-  <p>
-  <label for="artist_name">Artist:</label>
+  
+  <br>
+  <h4>
+  <label for="artist_name"><strong>Artist Name:</strong></label>
   <input type="text" name="artist_name">
-  </p>
-  
-  <fieldset>
-    <p>
-    <label for="songs[][name]">Song Name:</label>
-    <input type="text" name="songs[][name]">
-  
-    <label for="songs[][genre]">Genre:</label>
-    <input type="text" name="songs[][genre]">
-    </p>
-  </fieldset>
+  </h4>
+  <br>
 
   <fieldset>
-    <p>
+    
     <label for="songs[][name]">Song Name:</label>
     <input type="text" name="songs[][name]">
-  
+    <br>
     <label for="songs[][genre]">Genre:</label>
     <input type="text" name="songs[][genre]">
-    </p>
+    
   </fieldset>
 
-  <button type="submit">Add New Song</button>
+  <br>
+
+  <fieldset>
+    
+    <label for="songs[][name]">Song Name:</label>
+    <input type="text" name="songs[][name]">
+    <br>
+    <label for="songs[][genre]">Genre:</label>
+    <input type="text" name="songs[][genre]">
+    
+  </fieldset>
+
+  <br>
+
+  <button type="submit">Add Artist with Songs</button>
 </form>
+
+<br>
