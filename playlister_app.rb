@@ -1,9 +1,10 @@
 
 class PlaylisterApp < Sinatra::Base
 
-  configure :development do
-    register Sinatra::Reloader
-  end
+  # bug: in order to this to work, you have to comment out this line, run without Rack Webconsole,
+  #      then stop the server, uncomment it, and then restart server
+  use Rack::Webconsole
+
 
   get '/' do
     # @artists = Artist.all
@@ -80,5 +81,7 @@ class PlaylisterApp < Sinatra::Base
     @genre = Genre.find_by_slug(params[:slug])
     erb :'genre/genre'
   end
+
+    # Rack::Webconsole.inject_jquery = true
 
 end

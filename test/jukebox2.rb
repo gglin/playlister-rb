@@ -1,52 +1,7 @@
-require_relative 'environment'
-
-# refactor: move some of code to another module
-# feature add: sort while browsing
-# known bug: regexp matching with weird characters
-#   ex: when arrow keys entered, `filter_by_command': premature end of char-class:
+require_relative '../environment'
 
 
-# reopen Array class
-class Array
-
-  # Enumerable.grep(pattern) only matches when pattern === element
-  # Enhance functionality so that it also matches when element =~ pattern
-  #    /abc/ === "abc" returns true
-  #    However, "abc" === /abc/ returns false
-  #    /abc/ =~ "abc"  &  "abc" =~ /abc/ will both find a match
-  def grep2(pattern)
-    self.select do |element|
-      if pattern.class == element.class
-        element == pattern
-      else
-        element =~ pattern
-      end
-    end
-  end
-
-  # returns an array of downcased names (string), given an array of objects
-  def objects_to_names 
-    self.collect{ |object| object.name.downcase }
-  end
-
-  # returns (filters) an array of objects from the original objects list, given an array of downcased names (strings)
-  def names_to_objects(objects) 
-    self.collect do |name|
-      objects.detect{ |object| object.name.downcase == name } 
-      # doesn't work properly if there are two of the same name, as this will always return the first result
-    end
-  end
-
-  # returns an array of new objects, based on each element of the original array having that new object as a method name
-  def objects_to_objects(new_object)
-    self.collect{ |object| object.send(new_object) }
-  end
-
-end
-
-
-
-class Jukebox
+class Jukebox2
 
   VALID_COMMANDS = [/^(artist|song|genre)s?$/, /^(artist|song|genre)\s+\S+/, "stop", "help", "exit"]
  
@@ -253,9 +208,9 @@ class Jukebox
       puts "\n #{print_category(category)}:"
       category.songs.each_with_index do |song, index|
         if    category.class.to_s == "Genre"
-          puts "\t#{index+1}.    "[0,5] + " #{spacer(song.artist.name, longest_name_length(category.artists))} - #{song.name}"
+          puts "\t#{index+1}.    "[0,5] + " #{song.spacer(song.artist.name, longest_name_length(category.artists))} - #{song.name}"
         elsif category.class.to_s == "Artist"
-          puts "\t#{index+1}.    "[0,5] + " #{print_song(song)}"
+          puts "\t#{index+1}.    "[0,5] + " #{song.print}"
         else
           puts "ERROR - Category not recognized!"
         end
@@ -275,7 +230,7 @@ class Jukebox
 
   def stop
     if @now_playing
-      puts "\n  Stopped playing '#{@now_playing.artist.name} - #{print_song(@now_playing)}'"
+      puts "\n  Stopped playing '#{@now_playing.artist.name} - #{@now_playing.print}'"
       @now_playing = nil
     else
       puts "\n  There is no song playing!"
@@ -307,7 +262,7 @@ class Jukebox
 
   def show_song_playing
     if @now_playing
-      puts "\n  Now playing: #{@now_playing.artist.name} - #{print_song(@now_playing)}"
+      puts "\n  Now playing: #{@now_playing.artist.name} - #{@now_playing.print}"
     else
       puts "\n  No song currently playing."
     end
@@ -330,34 +285,8 @@ class Jukebox
   end
 
 
-  def spacer(name, width = nil)
-    width = name.length + 1 if width.nil?
-    "#{name}                                                                                   "[0,width]
-  end
-
-
   def print_category(category, width = nil, include_artist = false, artist_width = nil)
-    category_name = category.class.to_s.downcase
-    self.send("print_#{category_name}".to_sym, category, width, include_artist, artist_width)
-  end
-
-
-  def print_artist(artist, width = nil, *args)
-    song_word = artist.songs_count == 1 ? "Song" : "Songs"
-    "#{spacer(artist.name,width)} - #{artist.songs_count} #{song_word}"
-  end
-
-
-  def print_song(song, width = nil, include_artist = false, artist_width = nil)
-    artist_word = include_artist ? "#{spacer(song.artist.name,artist_width)} - " : ""
-    artist_word + "#{spacer(song.name,width)} [#{song.genre.name}]"
-  end
-
-
-  def print_genre(genre, width = nil, *args)
-    song_word   = genre.songs_count   == 1 ? "Song" : "Songs"
-    artist_word = genre.artists_count == 1 ? "Artist" : "Artists"
-    "#{spacer(genre.name+':',width)} #{genre.artists_count} #{artist_word}, #{genre.songs_count} #{song_word}"
+    category.print(width, include_artist, artist_width)
   end
 
 
@@ -438,7 +367,6 @@ class Jukebox
   end
 
 end
- 
 
 # Parse the data folder and create a new local variable which holds all the songs
 parser = LibraryParser.new
@@ -448,22 +376,6 @@ songs = Song.all
 
 
 # start a jukebox CLI
-cli = Jukebox.new
+cli = Jukebox2.new
 cli.add_songs(songs)
-
-# puts cli.songs
-# puts
-# puts cli.genres
-# puts
-# puts cli.artists
-# 
-# genres = cli.genres
-# artists = cli.artists
-
-# names_list = cli.objects_to_names(artists)
-# p names_list
-# puts "-------"
-# objects_list = cli.names_to_objects(names_list[0..10], artists)
-# p objects_list
 cli.start
-

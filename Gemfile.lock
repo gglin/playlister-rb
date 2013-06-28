@@ -2,8 +2,10 @@ GEM
   remote: https://rubygems.org/
   specs:
     backports (3.3.2)
+    bond (0.4.3)
     eventmachine (1.0.3)
     json (1.8.0)
+    multi_json (1.0.4)
     opal (0.4.1)
       source_map
     rack (1.5.2)
@@ -11,6 +13,15 @@ GEM
       rack
     rack-test (0.6.2)
       rack (>= 1.0)
+    rack-webconsole (0.1.4)
+      multi_json (~> 1.0.3)
+      rack
+      ripl (~> 0.5.1)
+      ripl-multi_line (~> 0.3.0)
+    ripl (0.5.1)
+      bond (~> 0.4.0)
+    ripl-multi_line (0.3.1)
+      ripl (>= 0.3.6)
     ruby-oembed (0.8.8)
     sinatra (1.4.3)
       rack (~> 1.4)
@@ -33,6 +44,7 @@ PLATFORMS
 
 DEPENDENCIES
   opal
+  rack-webconsole
   ruby-oembed
   sinatra
   sinatra-contrib
