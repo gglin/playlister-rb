@@ -4,6 +4,7 @@ require_relative '../concerns/memorable'
 require_relative '../concerns/findable'
 require_relative '../concerns/listable'
 require_relative '../concerns/sluggable'
+require_relative '../concerns/prettifiable'
 
 class Artist
 
